@@ -27,7 +27,7 @@ body:
     attributes:
       label: Plugin version / commit
       description: 'the `version` in `package.json`, or `git rev-parse --short HEAD`'
-      placeholder: 0.1.0 / afd7001
+      placeholder: 1.0.0 / d097ace
     validations:
       required: true
 
