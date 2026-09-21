@@ -16,11 +16,13 @@
 ### 新增
 
 - `tools/boot-check.sh` —— 把插件装进一次性 harness home，并要求一次真实的
-  `--port` 启动打印出监听 URL、且 stderr 为空。一个根本起不来的插件仍能让测试套件、
+  `--port` 启动之后**端口确实应答**、且 stderr 为空。一个根本起不来的插件仍能让测试套件、
   `--dump-config` 与打包自检全部通过 —— 因为补丁行的包名是在启动时对着 profile 解析的，
-  而比真启动更便宜的手段都不会去 apply 插件。它必须跑在
-  `npm install --no-save @deepseek-ai/dsh` 与 `node tools/link-harness-peers.mjs`
-  之后，这两步才让插件自身的 peer 导入可解析。
+  而比真启动更便宜的手段都不会去 apply 插件。断言落在**套接字**上而不是「打印出的监听 URL」上：
+  `0.1.5-rc.2` 启动成功却什么都不打印，`0.1.6-alpha.2` 才打印横幅，而这两条线都在支持范围内。
+  它必须跑在 `npm install --no-save @deepseek-ai/dsh` 与
+  `node tools/link-harness-peers.mjs` 之后，这两步才让插件自身的 peer 导入可解析；
+  脚本会自己发现 harness，而不是假设它在 `PATH` 上。
 - CI 里在矩阵的 Linux 腿跑上述脚本的一步。
 
 ### 修复

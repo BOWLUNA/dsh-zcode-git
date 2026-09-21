@@ -16,13 +16,17 @@ signature moved, so upgrading from 1.0.0 is a no-op for anyone already running i
 ### Added
 
 - `tools/boot-check.sh` — installs the plugin into a throwaway harness home and
-  requires a real `--port` boot to print a listen URL with an empty stderr. A
-  plugin that cannot start still passes the suite, `--dump-config` and the
-  packaging self-check, because a patch row's package name is resolved against
-  the profile at boot and nothing cheaper than a boot applies the plugin. Run it
-  after `npm install --no-save @deepseek-ai/dsh` and
+  requires a real `--port` boot to leave the port answering, with an empty
+  stderr. A plugin that cannot start still passes the suite, `--dump-config` and
+  the packaging self-check, because a patch row's package name is resolved
+  against the profile at boot and nothing cheaper than a boot applies the
+  plugin. The assertion is on the socket rather than on a printed listen URL:
+  `0.1.5-rc.2` boots without printing anything while `0.1.6-alpha.2` prints a
+  banner, and both lines are supported. Run it after
+  `npm install --no-save @deepseek-ai/dsh` and
   `node tools/link-harness-peers.mjs`, which is what makes the plugin's own peer
-  imports resolvable.
+  imports resolvable; it discovers the harness instead of assuming it is on
+  `PATH`.
 - A CI step that runs it on the Linux legs of the matrix.
 
 ### Fixed

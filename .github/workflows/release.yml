@@ -146,4 +146,16 @@ jobs:
             } >> "$NOTES"
           fi
 
-          gh release create "$TAG" --title "$TAG" --notes-file "$NOTES"
+          gh release create "$TAG" --title "$TAG" --notes-file "$NOTES" || {
+            # The check above and the create below are not atomic. Two runs for
+            # one tag do happen — pushing the v1.0.1 tag produced two release
+            # runs four seconds apart — so the loser of that race sees GitHub's
+            # `already_exists`. The Release existing is the desired end state,
+            # and reporting it as a failure would be a red build for something
+            # that is not wrong.
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              echo "another run created release $TAG first — that is the desired end state"
+              exit 0
+            fi
+            exit 1
+          }
