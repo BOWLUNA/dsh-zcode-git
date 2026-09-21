@@ -38,18 +38,28 @@ console.log(`suites: ${String(suites.length)}`);
 for (const suite of suites) console.log(`  ${suite}`);
 console.log("");
 
-const result = spawnSync(process.execPath, ["--test", ...suites.map((name) => join(TEST_DIR, name))], {
-	cwd: REPO,
-	encoding: "utf8",
-	// stdout is captured for parsing; stderr streams through so a failure is
-	// visible while it happens rather than only in the summary.
-	stdio: ["ignore", "pipe", "inherit"],
-	timeout: 900_000,
-});
+const result = spawnSync(
+	process.execPath,
+	// The reporter is pinned because Node changed its default between 20 and 24:
+	// 20 emits TAP (`# tests 95`), 24 emits the spec reporter (`ℹ tests 95`).
+	// Parsing either one alone breaks the other, and the failure looks like a
+	// test failure rather than a reporter change.
+	["--test", "--test-reporter=tap", ...suites.map((name) => join(TEST_DIR, name))],
+	{
+		cwd: REPO,
+		encoding: "utf8",
+		// stdout is captured for parsing; stderr streams through so a failure is
+		// visible while it happens rather than only in the summary.
+		stdio: ["ignore", "pipe", "inherit"],
+		timeout: 900_000,
+	},
+);
 
 const stdout = typeof result.stdout === "string" ? result.stdout : "";
 const count = (label) => {
-	const match = new RegExp(`^# ${label} (\\d+)$`, "m").exec(stdout);
+	// Accept both prefixes anyway, with optional indentation: belt and braces in
+	// case a future Node changes the reporter again and the pin stops applying.
+	const match = new RegExp(`^[ \\t]*(?:#|ℹ)[ \\t]*${label} (\\d+)[ \\t]*$`, "m").exec(stdout);
 	return match === null ? null : Number(match[1]);
 };
 
