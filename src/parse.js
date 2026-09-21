@@ -13,7 +13,7 @@
  * so spaces, tabs, newlines, non-ASCII names, and (on Windows) backslashes all
  * survive byte-for-byte instead of arriving as `"a\342\202\254b"`.
  *
- * @module dsh-tool-git/parse
+ * @module dsh-zcode-git/parse
  */
 
 /**

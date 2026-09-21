@@ -5,12 +5,12 @@
 ## 报告漏洞
 
 请通过
-[GitHub Security Advisories](https://github.com/BOWLUNA/dsh-tool-git/security/advisories/new)
+[GitHub Security Advisories](https://github.com/BOWLUNA/dsh-zcode-git/security/advisories/new)
 私下报告。漏洞请不要开公开 issue。
 
 一份有用的报告包含：
 
-- 受影响的版本（`npm view dsh-tool-git version`，或你实测的 commit）；
+- 受影响的版本（`npm view dsh-zcode-git version`，或你实测的 commit）；
 - 最小复现 —— 工具调用、当时的仓库状态、以及实际发生了什么；
 - 你认为的影响面。
 
@@ -57,6 +57,11 @@ dsh 的 profile 插件是**静态安装、无沙箱的受信代码**：它运行
 - **仓库中的机密。** 读到含凭据的文件并把它复述进对话，是模型的行为，本插件不做管制。
 
 ## 支持范围
+
+| 版本 | 支持 |
+| --- | --- |
+| `0.1.0` | ✅ |
+| 更早的版本 | ❌ |
 
 只支持最新发布版本。本插件独立于 harness 版本号，并在 `package.json` 的
 `engines.dsh` 里声明兼容范围；`node tools/verify-version-consistency.mjs`

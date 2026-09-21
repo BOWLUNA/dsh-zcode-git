@@ -5,12 +5,12 @@ English | [中文](SECURITY.zh.md)
 ## Reporting a vulnerability
 
 Report privately through
-[GitHub Security Advisories](https://github.com/BOWLUNA/dsh-tool-git/security/advisories/new).
+[GitHub Security Advisories](https://github.com/BOWLUNA/dsh-zcode-git/security/advisories/new).
 Please do not open a public issue for a vulnerability.
 
 A useful report contains:
 
-- the affected version (`npm view dsh-tool-git version`, or the commit you tested),
+- the affected version (`npm view dsh-zcode-git version`, or the commit you tested),
 - a minimal reproduction — the tool call, the repository state, and what happened,
 - the impact you believe it has.
 
@@ -73,6 +73,11 @@ the model's behalf**.
   police.
 
 ## Supported versions
+
+| Version | Supported |
+| --- | --- |
+| `0.1.0` | ✅ |
+| anything older | ❌ |
 
 Only the latest published version is supported. The plugin is versioned
 independently of the harness and declares its compatible range in

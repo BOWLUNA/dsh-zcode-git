@@ -1,0 +1,50 @@
+name: Feature request
+description: A git operation you want available as a tool.
+title: '[feat] '
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This plugin deliberately ships a **narrow** set of git operations. Before opening a request,
+        read the "What is deliberately absent" section of
+        [`docs/ARCHITECTURE.md`](https://github.com/BOWLUNA/dsh-zcode-git/blob/main/docs/ARCHITECTURE.md):
+        `push`, `fetch`, `pull`, `reset`, `clean`, `rebase` and config writes are excluded on purpose,
+        because an operation that can destroy a working tree in a single call should not be a tool.
+
+        A request that describes **a task** is far easier to act on than one that names a command.
+
+  - type: textarea
+    id: task
+    attributes:
+      label: What are you trying to do
+      description: The task in your own words. Leave the git command out of this one.
+    validations:
+      required: true
+
+  - type: textarea
+    id: why-not-bash
+    attributes:
+      label: Why bash is not good enough
+      description: |
+        The plugin exists because `bash` has three specific problems: the output shape follows the
+        user's git configuration, arguments must survive a shell, and reading and destroying are the
+        same tool. Which of those bites here? If none does, this may not need a tool at all.
+    validations:
+      required: true
+
+  - type: input
+    id: read-or-write
+    attributes:
+      label: Read-only or mutating
+      placeholder: read-only / mutating
+    validations:
+      required: true
+
+  - type: textarea
+    id: risk
+    attributes:
+      label: Failure mode if the model gets it wrong
+      description: What is lost when this is called with bad arguments, and is it recoverable?
+    validations:
+      required: false

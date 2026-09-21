@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Troubleshooting guide
+    url: https://github.com/BOWLUNA/dsh-zcode-git/blob/main/docs/TROUBLESHOOTING.md
+    about: The failures that were actually reproduced, each with a cause and a fix.
+  - name: Security issue
+    url: https://github.com/BOWLUNA/dsh-zcode-git/security/advisories/new
+    about: Please report vulnerabilities privately rather than in a public issue.

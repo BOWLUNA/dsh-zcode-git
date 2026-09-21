@@ -13,7 +13,7 @@
  *    crash when the harness is upgraded. The plugin therefore avoids them and
  *    enforces the same constraints in code.
  *
- * @module dsh-tool-git/test/schema
+ * @module dsh-zcode-git/test/schema
  */
 
 import assert from "node:assert/strict";
@@ -30,7 +30,7 @@ const definitions = defineTools({ get: () => undefined }, SETTINGS);
 
 test("the plugin exports the shape Cordis loads", () => {
 	assert.equal(typeof name, "string");
-	assert.equal(name, "dsh-tool-git");
+	assert.equal(name, "dsh-zcode-git");
 	assert.deepEqual(inject, ["tools"]);
 	// Config is a schemastery schema object, which is a callable factory.
 	assert.equal(typeof Config, "function");

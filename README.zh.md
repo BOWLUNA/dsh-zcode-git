@@ -1,4 +1,4 @@
-# dsh-tool-git
+# dsh-zcode-git
 
 [English](README.md) | 中文
 
@@ -22,7 +22,7 @@ DSH 本身没有任何 git 工具，模型只能通过 `bash` 手搓命令。这
 ## 安装
 
 ```bash
-dsh plugin --profile web add dsh-tool-git
+dsh plugin --profile web add dsh-zcode-git
 ```
 
 包自带 patch 声明，profile 的 `bundles` 会自动更新。装完**重启 Harness** —— bundle 层在启动时读取。
@@ -33,7 +33,7 @@ dsh plugin --profile web add dsh-tool-git
 # cordis.patch.yml
 - insert:
     - id: tool-git
-      name: dsh-tool-git
+      name: dsh-zcode-git
 ```
 
 ## 工具清单
@@ -105,7 +105,7 @@ patch 条目是**整键替换**而非深合并，所以要把想保留的键写�
 ```yaml
 - insert:
     - id: tool-git
-      name: dsh-tool-git
+      name: dsh-zcode-git
       config:
         timeoutMs: 60000
         requireApprovalForWrites: true

@@ -11,7 +11,7 @@
  * git's exit-128 spew, and that obviously hostile input never reaches a
  * process at all.
  *
- * @module dsh-tool-git/validate
+ * @module dsh-zcode-git/validate
  */
 
 /** Bracketed ref syntax openers, which git treats specially in ref names. */

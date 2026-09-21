@@ -34,11 +34,14 @@ const problems = [];
  * @returns the number of test cases the runner reported.
  */
 function measureTests() {
-	const output = execFileSync(process.execPath, ["--test"], {
+	// Through the single entry point, not `node --test` directly: a suite added
+	// to test/ but not picked up there would otherwise be counted by neither
+	// the runner nor this guard.
+	const output = execFileSync(process.execPath, [join(REPO, "test", "run.mjs")], {
 		cwd: REPO,
 		encoding: "utf8",
 		stdio: ["ignore", "pipe", "ignore"],
-		timeout: 600_000,
+		timeout: 900_000,
 	});
 	const match = /^# tests (\d+)$/m.exec(output);
 	if (match === null) {
@@ -137,6 +140,17 @@ for (const rel of ["README.zh.md"]) {
 	if (!readFileSync(join(REPO, rel), "utf8").includes(range)) {
 		problems.push(`${rel} does not state the declared dsh range ${range}`);
 	}
+}
+
+// SECURITY.md's support table must name the version the package is actually at.
+// A stale row tells users the wrong thing about what is maintained, and no test
+// can see documentation.
+const security = readFileSync(join(REPO, "SECURITY.md"), "utf8");
+const supportedRow = /^\|\s*`(\d+\.\d+\.\d+)`\s*\|/m.exec(security);
+if (supportedRow === null) {
+	problems.push("SECURITY.md has no `x.y.z` row in its supported-versions table");
+} else if (supportedRow[1] !== manifest.version) {
+	problems.push(`SECURITY.md's support table names ${supportedRow[1]}, but the package version is ${manifest.version}`);
 }
 
 if (problems.length > 0) {

@@ -23,7 +23,7 @@
  * behavioural settings (`core.autocrlf`, `user.name`, `user.email`, hook
  * configuration) alone: those are the user's intent, not noise.
  *
- * @module dsh-tool-git/exec
+ * @module dsh-zcode-git/exec
  */
 
 /**

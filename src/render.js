@@ -6,7 +6,7 @@
  * `presentationMeta` (what a UI card shows) without either being derived by
  * re-parsing the other.
  *
- * @module dsh-tool-git/render
+ * @module dsh-zcode-git/render
  */
 
 /**

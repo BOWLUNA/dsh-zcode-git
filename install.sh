@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install dsh-tool-git into a dsh profile.
+# Install dsh-zcode-git into a dsh profile.
 #
 # Usage:
 #   ./install.sh                    # web profile

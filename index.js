@@ -1,5 +1,5 @@
 /**
- * dsh-tool-git — first-class Git tools for a DeepSeek Harness agent.
+ * dsh-zcode-git — first-class Git tools for a DeepSeek Harness agent.
  *
  * The harness ships no git tooling, so an agent drives git through `bash`.
  * That has three costs this plugin removes:
@@ -23,7 +23,7 @@
  * the approval prompt is the only thing standing between a mistaken plan and
  * lost work.
  *
- * @module dsh-tool-git
+ * @module dsh-zcode-git
  */
 
 import z from "@deepseek-ai/schemastery";
@@ -47,7 +47,7 @@ import {
 } from "./src/render.js";
 
 /** Stable plugin identity, matching the package name. */
-export const name = "dsh-tool-git";
+export const name = "dsh-zcode-git";
 
 /** The tool registry is the only hard dependency; everything else is probed. */
 export const inject = ["tools"];
@@ -181,7 +181,7 @@ export function apply(ctx, config) {
 		// 'type: null'` — and names only the alphabetically first tool, so the
 		// error points at a tool that is not itself at fault.
 		const tool = defineTool(definition);
-		ctx.effect(() => ctx.tools.register(tool), `dsh-tool-git: ${definition.name}`);
+		ctx.effect(() => ctx.tools.register(tool), `dsh-zcode-git: ${definition.name}`);
 	}
 }
 

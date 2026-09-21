@@ -1,16 +1,16 @@
 {
-  "name": "dsh-tool-git",
+  "name": "dsh-zcode-git",
   "version": "0.1.0",
   "description": "First-class Git tools for DeepSeek Harness agents: structured status/diff/log/branch/commit/stash whose output is immune to the user's pager, color, quotepath and alias configuration; every invocation is an argv array so no shell ever sees an argument; mutations go through the harness approval service.",
   "license": "MIT",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/BOWLUNA/dsh-tool-git.git"
+    "url": "git+https://github.com/BOWLUNA/dsh-zcode-git.git"
   },
-  "homepage": "https://github.com/BOWLUNA/dsh-tool-git#readme",
+  "homepage": "https://github.com/BOWLUNA/dsh-zcode-git#readme",
   "bugs": {
-    "url": "https://github.com/BOWLUNA/dsh-tool-git/issues"
+    "url": "https://github.com/BOWLUNA/dsh-zcode-git/issues"
   },
   "keywords": [
     "dsh",
@@ -34,7 +34,7 @@
     "dsh": ">=0.1.5-rc.2 <0.2.0-0"
   },
   "scripts": {
-    "test": "node --test",
+    "test": "node test/run.mjs",
     "verify-translation-pairing": "node tools/verify-translation-pairing.mjs",
     "verify-version-consistency": "node tools/verify-version-consistency.mjs",
     "verify-doc-numbers": "node tools/verify-doc-numbers.mjs"
@@ -61,6 +61,6 @@
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
     "@deepseek-ai/schemastery": "^3.18.2",
-    "@deepseek-ai/dsh-tools": "^0.1.5-rc.2"
+    "@deepseek-ai/dsh-tools": ">=0.1.5-rc.2 <0.2.0-0"
   }
 }

@@ -1,0 +1,105 @@
+name: Bug report
+description: A tool returned something wrong, failed, or the plugin would not load.
+title: '[bug] '
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please spend a minute on
+        [`docs/TROUBLESHOOTING.md`](https://github.com/BOWLUNA/dsh-zcode-git/blob/main/docs/TROUBLESHOOTING.md)
+        first — it documents the failures that were actually reproduced, each with a cause and a way out.
+
+        Most failures in this plugin are **silent**: a plausible wrong answer rather than an error. That
+        makes the details below the difference between a report that can be diagnosed and one that cannot.
+
+  - type: input
+    id: dsh-version
+    attributes:
+      label: DSH version
+      description: 'the output of `dsh --version`'
+      placeholder: 0.1.6-alpha.2
+    validations:
+      required: true
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version / commit
+      description: 'the `version` in `package.json`, or `git rev-parse --short HEAD`'
+      placeholder: 0.1.0 / afd7001
+    validations:
+      required: true
+
+  - type: dropdown
+    id: profile
+    attributes:
+      label: Which profile
+      options:
+        - web
+        - headless
+        - other (explain under "What happens")
+    validations:
+      required: true
+
+  - type: textarea
+    id: tool-call
+    attributes:
+      label: The tool call
+      description: |
+        Which tool, with which arguments, and what came back. If you can, also run the equivalent git
+        command by hand — that pair is what separates a tool bug from a git behaviour.
+      render: shell
+      value: |
+        tool: git_status
+        args: {}
+        expected: ...
+        got: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: repo-state
+    attributes:
+      label: The repository state
+      description: |
+        Git has states that change what a tool should return — a detached HEAD, an unborn branch, a
+        merge in progress, a submodule, a path with a space or a CJK character. Which applied here?
+      render: shell
+      value: |
+        $ git status --short --branch
+        $ git rev-parse --is-inside-work-tree
+    validations:
+      required: true
+
+  - type: textarea
+    id: dump-config
+    attributes:
+      label: Composition self-check
+      description: |
+        This separates "installed but inert" from "not installed at all". Expect hundreds of lines.
+      render: shell
+      value: |
+        $ dsh --profile web --dump-config | wc -l
+        $ dsh --profile web --dump-config | grep -n tool-git
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Startup log
+      description: |
+        Anything naming this plugin or one of its tools. A tool-name collision with another plugin
+        appears **only** here — `--dump-config` cannot see it.
+      render: shell
+    validations:
+      required: false
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: Windows 11 / Ubuntu 24.04 / WSL2 / macOS 15
+    validations:
+      required: true

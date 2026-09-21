@@ -10,7 +10,7 @@ stops driving git through `bash`. One artifact on one mounting plane:
 
 | Artifact | What it is | Where it goes |
 | --- | --- | --- |
-| this repository | an npm package that also declares `dsh.bundle.patch` | `dsh plugin --profile web add dsh-tool-git` |
+| this repository | an npm package that also declares `dsh.bundle.patch` | `dsh plugin --profile web add dsh-zcode-git` |
 
 ## Commands
 

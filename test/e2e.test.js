@@ -12,7 +12,7 @@
  * so the tests exercise the plugin's own seam usage (spawn spec, collect-mode
  * readers, exit facts) without needing a booted harness.
  *
- * @module dsh-tool-git/test/e2e
+ * @module dsh-zcode-git/test/e2e
  */
 
 import assert from "node:assert/strict";
@@ -104,7 +104,7 @@ const created = [];
  * @returns the repository path.
  */
 async function makeRepo(name) {
-	const dir = mkdtempSync(join(tmpdir(), `dsh-tool-git-${name}-`));
+	const dir = mkdtempSync(join(tmpdir(), `dsh-zcode-git-${name}-`));
 	created.push(dir);
 	await git(dir, ["init", "-b", "main"]);
 	await git(dir, ["config", "user.name", "Test Author"]);
@@ -251,7 +251,7 @@ test("acceptance 6 — a multi-line message round-trips through the log tool", a
 });
 
 test("acceptance 7 — a non-repository directory fails with an actionable message", async () => {
-	const plain = mkdtempSync(join(tmpdir(), "dsh-tool-git-plain-"));
+	const plain = mkdtempSync(join(tmpdir(), "dsh-zcode-git-plain-"));
 	created.push(plain);
 	const value = await run("git_status", {}, plain);
 	assert.equal(value.ok, false);

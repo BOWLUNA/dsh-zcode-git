@@ -1,4 +1,4 @@
-# dsh-tool-git
+# dsh-zcode-git
 
 English | [中文](README.zh.md)
 
@@ -23,7 +23,7 @@ that makes `bash` a bad fit:
 ## Install
 
 ```bash
-dsh plugin --profile web add dsh-tool-git
+dsh plugin --profile web add dsh-zcode-git
 ```
 
 The bundle declares its own patch, so the profile's `bundles` list is updated
@@ -36,7 +36,7 @@ To mount it by hand instead:
 # cordis.patch.yml
 - insert:
     - id: tool-git
-      name: dsh-tool-git
+      name: dsh-zcode-git
 ```
 
 ## Tools
@@ -120,7 +120,7 @@ so restate anything you want to keep:
 ```yaml
 - insert:
     - id: tool-git
-      name: dsh-tool-git
+      name: dsh-zcode-git
       config:
         timeoutMs: 60000
         requireApprovalForWrites: true

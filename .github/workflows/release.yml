@@ -1,0 +1,89 @@
+# Publishing by tag.
+#
+# Why CI publishes rather than a person: an interactive `npm publish` now goes
+# through staged publishing and needs 2FA approval, and a token pasted into a
+# session expires. Publishing from a workflow avoids both.
+#
+# One-time setup (recommended, needs no token): add a Trusted Publisher on the
+# npm package —
+#   Publisher: GitHub Actions
+#   Organization: <owner>
+#   Repository: <repo>
+#   Workflow filename: release.yml      ← must match this filename exactly
+#   Allowed actions: tick "Allow npm publish" to publish on tag push; leave it
+#   unticked if you would rather approve each release on npm.
+# Fallback: a repository secret NPM_TOKEN. Use an *Automation* token — a session
+# token goes through staged publish and leaves `latest` pointing at the old
+# version.
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # Trusted Publishing (OIDC): npm confirms through GitHub's OIDC token that
+  # this publish really came from this repository and this workflow, so no npm
+  # token is needed — and there is nothing to expire or leak.
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      # The harness peer packages the suite compiles against. Keep this version
+      # in step with the one test.yml pins; moving one without the other means
+      # the release is validated against a harness nobody runs.
+      - name: Install the harness peers
+        run: npm install --no-save --no-audit --no-fund @deepseek-ai/dsh@0.1.6-alpha.2
+      - name: Link harness peers for the suite
+        run: node tools/link-harness-peers.mjs
+
+      # The same guards test.yml runs. A red guard here means a bad version never
+      # reaches npm at all.
+      - name: Suite
+        run: node test/run.mjs
+      - name: Bilingual pairing
+        run: node tools/verify-translation-pairing.mjs
+      - name: Documented numbers
+        run: node tools/verify-doc-numbers.mjs
+      - name: Version consistency
+        run: |
+          node tools/verify-version-consistency.mjs --dsh 0.1.6-alpha.2
+          node tools/verify-version-consistency.mjs --dsh 0.1.5-rc.2
+
+      # Credential self-check. Run this workflow by hand (workflow_dispatch)
+      # after rotating an npm password to learn immediately whether the token
+      # still works, instead of discovering it at the next release.
+      - name: Credential self-check
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "no NPM_TOKEN configured — publishing will use OIDC"
+            exit 0
+          fi
+          npm whoami
+
+      # Idempotent: re-running a tag npm already has does nothing.
+      # Both the name and the version are read from package.json, so renaming
+      # the package cannot leave a stale literal here.
+      - name: Publish (skips a version npm already has)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          NAME="$(node -p "require('./package.json').name")"
+          VERSION="$(node -p "require('./package.json').version")"
+          if npm view "${NAME}@${VERSION}" version >/dev/null 2>&1; then
+            echo "${NAME}@${VERSION} is already on npm — nothing to do"
+            exit 0
+          fi
+          npm publish --tag latest

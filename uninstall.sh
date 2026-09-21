@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Remove dsh-tool-git from a dsh profile.
+# Remove dsh-zcode-git from a dsh profile.
 #
 # Usage:
 #   ./uninstall.sh                    # web profile
