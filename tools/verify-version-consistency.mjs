@@ -11,9 +11,12 @@
  *   2. every version the CI matrix installs,
  *   3. the version the current run installed, when `--dsh <version>` is passed.
  *
- * The syntax supported is the subset package.json uses: space-separated
- * comparators (`>=0.1.5-rc.2 <0.2.0-0`). That is deliberate — a full semver
- * implementation is a dependency this plugin does not need.
+ * The syntax supported is the subset package.json uses: `||`-separated branches
+ * of space-separated comparators, plus node-semver's rule that a prerelease
+ * satisfies a branch only when that branch carries a prerelease comparator on
+ * the same `major.minor.patch` tuple. The second rule is not decoration: without
+ * it a range like `>=0.1.5-rc.2 <0.2.0-0` appears to cover `0.1.6-alpha.2` and
+ * does not, which is how a plugin ships and then meets `ERESOLVE` on install.
  *
  * Run: node tools/verify-version-consistency.mjs [--dsh <version>]
  * Exit: 0 when consistent; 1 listing each version outside the range.
@@ -71,7 +74,31 @@ function compare(a, b) {
 function satisfies(version, range) {
 	const parsed = parseVersion(version);
 	if (parsed === null) return false;
-	for (const clause of String(range).trim().split(/\s+/)) {
+	return String(range)
+		.split("||")
+		.some((branch) => satisfiesBranch(parsed, branch));
+}
+
+/**
+ * Evaluate one `||` branch against a parsed version.
+ *
+ * Two rules beyond plain comparison, both of which are the difference between
+ * agreeing with npm and disagreeing with it:
+ *
+ * 1. Every comparator in the branch must hold (space-separated = AND).
+ * 2. **A prerelease version only satisfies the branch when some comparator in
+ *    it sits on the same `major.minor.patch` tuple and itself carries a
+ *    prerelease tag.** This is node-semver's rule, and omitting it makes a
+ *    broad-looking range appear to match when npm will silently exclude the
+ *    version — the failure users meet as `ERESOLVE` on install.
+ *
+ * @param parsed - the parsed candidate version.
+ * @param branch - one `||` branch of a range.
+ * @returns whether the version satisfies that branch.
+ */
+function satisfiesBranch(parsed, branch) {
+	const clauses = branch.trim().split(/\s+/).filter((clause) => clause !== "");
+	for (const clause of clauses) {
 		const match = /^(>=|<=|>|<|=)?(.+)$/.exec(clause);
 		if (match === null) continue;
 		const bound = parseVersion(match[2]);
@@ -84,7 +111,38 @@ function satisfies(version, range) {
 		if (operator === "<" && order >= 0) return false;
 		if (operator === "=" && order !== 0) return false;
 	}
-	return true;
+	if (parsed.pre === null) return true;
+	return clauses.some((clause) => {
+		const operand = /^(>=|<=|>|<|=)?(.+)$/.exec(clause)?.[2] ?? "";
+		const bound = parseVersion(operand);
+		return (
+			bound !== null &&
+			bound.pre !== null &&
+			bound.major === parsed.major &&
+			bound.minor === parsed.minor &&
+			bound.patch === parsed.patch
+		);
+	});
+}
+
+// Self-check the evaluator against cases where it must agree with npm. A
+// silently-permissive evaluator would report success here while users hit
+// ERESOLVE on install — the exact failure this guard exists to prevent.
+const EVALUATOR_CASES = [
+	["0.1.6-alpha.2", ">=0.1.5-rc.2 <0.2.0-0", false, "prerelease on a tuple no comparator mentions"],
+	["0.1.6-alpha.2", ">=0.1.5-rc.2 <0.1.6-0 || >=0.1.6-alpha.1 <0.2.0-0", true, "explicit branch on the 0.1.6 tuple"],
+	["0.1.5-rc.2", ">=0.1.5-rc.2 <0.1.6-0 || >=0.1.6-alpha.1 <0.2.0-0", true, "explicit branch on the 0.1.5 tuple"],
+	["0.2.0", ">=0.1.5-rc.2 <0.1.6-0 || >=0.1.6-alpha.1 <0.2.0-0", false, "above the ceiling"],
+	["0.1.4", ">=0.1.5-rc.2 <0.1.6-0 || >=0.1.6-alpha.1 <0.2.0-0", false, "below the floor"],
+	["0.1.7", ">=0.1.5-rc.2 <0.1.6-0 || >=0.1.6-alpha.1 <0.2.0-0", true, "a stable release inside"],
+	["0.1.5", ">=0.1.5-rc.2 <0.1.6-0", true, "the stable release of the lower tuple"],
+];
+for (const [version, range, expected, why] of EVALUATOR_CASES) {
+	if (satisfies(version, range) !== expected) {
+		console.error(`✗ range evaluator self-check failed (${why}):`);
+		console.error(`    satisfies("${version}", "${range}") should be ${String(expected)}`);
+		process.exit(2);
+	}
 }
 
 const manifest = JSON.parse(readFileSync(join(REPO, "package.json"), "utf8"));

@@ -15,7 +15,7 @@ DSH 本身没有任何 git 工具，模型只能通过 `bash` 手搓命令。这
 
 ## 环境要求
 
-- DeepSeek Harness `>=0.1.5-rc.2 <0.2.0-0` —— 同一范围也声明在 `engines.dsh`
+- DeepSeek Harness `>=0.1.5-rc.2 <0.1.6-0 || >=0.1.6-alpha.1 <0.2.0-0` —— 同一范围也声明在 `engines.dsh`
 - Node `>=20`，harness 自带的那份运行时即满足
 - `PATH` 上有一个 `git` 二进制
 
