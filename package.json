@@ -1,0 +1,66 @@
+{
+  "name": "dsh-tool-git",
+  "version": "0.1.0",
+  "description": "First-class Git tools for DeepSeek Harness agents: structured status/diff/log/branch/commit/stash whose output is immune to the user's pager, color, quotepath and alias configuration; every invocation is an argv array so no shell ever sees an argument; mutations go through the harness approval service.",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BOWLUNA/dsh-tool-git.git"
+  },
+  "homepage": "https://github.com/BOWLUNA/dsh-tool-git#readme",
+  "bugs": {
+    "url": "https://github.com/BOWLUNA/dsh-tool-git/issues"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "deepseek",
+    "cordis",
+    "git",
+    "vcs",
+    "version-control",
+    "diff",
+    "commit",
+    "status",
+    "log",
+    "stash",
+    "branch",
+    "agent-tools"
+  ],
+  "engines": {
+    "node": ">=20",
+    "dsh": ">=0.1.5-rc.2 <0.2.0-0"
+  },
+  "scripts": {
+    "test": "node --test",
+    "verify-translation-pairing": "node tools/verify-translation-pairing.mjs",
+    "verify-version-consistency": "node tools/verify-version-consistency.mjs",
+    "verify-doc-numbers": "node tools/verify-doc-numbers.mjs"
+  },
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "src",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/schemastery": "^3.18.2",
+    "@deepseek-ai/dsh-tools": "^0.1.5-rc.2"
+  }
+}

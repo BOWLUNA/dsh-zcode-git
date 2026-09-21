@@ -1,0 +1,16 @@
+# Normalize line endings so a Windows contributor and a Linux CI runner commit
+# byte-identical text. This is load-bearing for translation pairing: the recorded
+# hashes in *.i18n.yaml are git blob hashes, and a `\r\n` working copy would
+# produce a different blob than CI computes.
+* text=auto eol=lf
+
+# Binary assets must never be normalized.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+
+# Generated; excluded from language stats.
+pnpm-lock.yaml linguist-generated=true

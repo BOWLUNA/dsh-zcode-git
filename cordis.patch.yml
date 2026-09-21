@@ -1,0 +1,10 @@
+# Mount the git tools into a profile. The row id is `tool-git`; ids are global
+# across every composed patch layer, so a collision here is a hard boot failure
+# rather than a silent override.
+- insert:
+    - id: tool-git
+      name: dsh-tool-git
+      # Every key below has a default, so an empty config is valid. Override
+      # only what needs changing; a patch entry replaces the whole `config` map
+      # rather than merging into it.
+      config: {}
