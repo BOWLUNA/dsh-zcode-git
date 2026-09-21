@@ -144,13 +144,25 @@ Cheapest first. Do not claim a rung you did not climb.
    you can compare against `git` run by hand. This is the only rung that
    catches a renderer or a schema mismatch the provider would reject.
 
-Rungs 1 and 2 run in CI on every platform. Rung 3 runs in CI on the Linux legs
-(`tools/boot-check.sh`): a boot needs a harness install, and the plugin manager
-drives pnpm with no fallback, which the Windows image does not carry. Run rung 3
-by hand on Windows whenever you touch anything that affects mounting — under Git
-Bash a POSIX path handed to a native node process is rewritten (`/d/a/repo`
-becomes `D:\d\a\repo`) and the harness entry point is reached through a shell
-wrapper, so a scripted Windows boot can fail for reasons that are not the
-plugin's. Widening the CI step to Windows needs a green Windows run to point at
-first; a gate that goes red on infrastructure gets switched off. Rung 4 stays
-manual because it needs a model credential.
+Rungs 1 and 2 run in CI on every platform. Rung 3 runs in CI on the Linux leg
+that uses Node 24 (`tools/boot-check.sh`), for two measured reasons rather than
+by preference:
+
+- **Not Windows.** A boot needs a harness install, and the plugin manager drives
+  pnpm with no fallback, which the Windows image does not carry. Under Git Bash a
+  POSIX path handed to a native node process is also rewritten (`/d/a/repo`
+  becomes `D:\d\a\repo`), so a scripted Windows boot can fail for reasons that
+  are not the plugin's. Run rung 3 by hand on Windows whenever you touch
+  something that affects mounting; widening the CI step needs a green Windows run
+  to point at first.
+- **Not Node 20.** On that leg `dsh --version` prints nothing and
+  `dsh plugin --profile web add <repo>` exits 0 having written nothing — both
+  streams empty, and the plugin simply absent from the composed tree. The plugin
+  never installs, so no boot can succeed there. That is the harness on that
+  runtime rather than this plugin; the exact cause is not yet isolated, and the
+  workspace ledger carries it as GIT-3.
+
+Either way the principle is the same: a gate that goes red for a reason that is
+not the plugin's gets switched off, so a red leg is a reason to narrow the gate
+and record why, not to leave it red. Rung 4 stays manual because it needs a model
+credential.

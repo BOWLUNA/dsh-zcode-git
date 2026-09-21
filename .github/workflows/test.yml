@@ -146,20 +146,30 @@ jobs:
       # it reports a `pnpm-missing` failure rather than degrading, so pnpm is
       # installed explicitly here rather than assumed to be on the image.
       #
-      # Linux only, deliberately. Under Git Bash a POSIX path handed to a native
-      # node process is rewritten (`/d/a/repo` becomes `D:\d\a\repo`), and the
-      # harness entry point is reached through a shell wrapper, so a Windows run
-      # of this step can fail for reasons that have nothing to do with the
-      # plugin — and a gate that goes red on infrastructure gets switched off.
-      # The failure class it catches is resolved by the harness at boot and is
-      # platform-independent. Windows boot stays a manual rung; widen this only
-      # once there is a green Windows run to point at.
+      # Linux and Node 24 only.
+      #
+      # Linux, deliberately: under Git Bash a POSIX path handed to a native node
+      # process is rewritten (`/d/a/repo` becomes `D:\d\a\repo`) and the harness
+      # entry point is reached through a shell wrapper, so a Windows run of this
+      # step can fail for reasons that have nothing to do with the plugin — and a
+      # gate that goes red on infrastructure gets switched off. The failure class
+      # it catches is resolved by the harness at boot and is platform-independent.
+      # Windows boot stays a manual rung.
+      #
+      # Not Node 20, on measured evidence: on that leg `dsh --version` prints
+      # nothing and `dsh plugin --profile web add <repo>` exits 0 having written
+      # nothing at all — both streams are empty and the plugin is absent from the
+      # composed tree (`--dump-config` succeeds, the row is simply not there).
+      # The plugin therefore never installs, and no boot can succeed. That is the
+      # harness or its package manager on that runtime rather than this plugin;
+      # see plugins/git/dsh-zcode-git/issues/GIT-3 in the workspace ledger. The
+      # suite still runs on 20, which is what that leg is there for.
       - name: Install pnpm (the plugin manager has no other package manager)
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && matrix.node-version == '24'
         run: npm install -g pnpm@12.4.2
 
       - name: Boot check — the plugin must actually start
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && matrix.node-version == '24'
         env:
           BOOT_HOME: ${{ runner.temp }}/dsh-home
           BOOT_PORT: '31870'
