@@ -8,6 +8,29 @@
 
 ## [未发布]
 
+## [1.0.1] — 2026-09-21
+
+只动 CI、打包与发布管道。运行时行为未变，工具签名也没有移动，所以对已经在用
+1.0.0 的人来说这次升级是无感的。
+
+### 新增
+
+- `tools/boot-check.sh` —— 把插件装进一次性 harness home，并要求一次真实的
+  `--port` 启动打印出监听 URL、且 stderr 为空。一个根本起不来的插件仍能让测试套件、
+  `--dump-config` 与打包自检全部通过 —— 因为补丁行的包名是在启动时对着 profile 解析的，
+  而比真启动更便宜的手段都不会去 apply 插件。它必须跑在
+  `npm install --no-save @deepseek-ai/dsh` 与 `node tools/link-harness-peers.mjs`
+  之后，这两步才让插件自身的 peer 导入可解析。
+- CI 里在矩阵的 Linux 腿跑上述脚本的一步。
+
+### 修复
+
+- release 工作流现在会创建 GitHub Release。它原先带的是
+  `permissions: contents: read` 且没有这一步，于是推 tag 之后仓库的 Releases 面板
+  停在上一个版本：tag 与提交都动了，首页却像什么都没发生。
+- Release 正文取自本文件对应版本的章节，而不是另写一份；并且在 `npm publish`
+  没有成功时明确写出来。
+
 ## [1.0.0] — 2026-09-21
 
 首个公开发布版。下面的 0.1.0 是开发期序列，1.0.0 才是发布到插件市场的第一个版本。

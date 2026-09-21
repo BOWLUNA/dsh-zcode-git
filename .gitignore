@@ -1,5 +1,8 @@
 node_modules/
 .refs/
+# Throwaway harness home used by tools/boot-check.sh. It holds a whole profile
+# plus its installed plugins, so it must never be committed.
+.lab/
 *.log
 .DS_Store
 .idea/

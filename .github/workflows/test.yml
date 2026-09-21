@@ -129,3 +129,38 @@ jobs:
               process.exit(1);
             }
           ' "$RUNNER_TEMP/pack.json"
+
+      # ── Rung 3 of the verification ladder: does the plugin actually load? ──
+      #
+      # Every step above proves the code is correct. None of them proves the
+      # plugin *mounts*, and the difference is not academic: `--dump-config`
+      # composes configuration without applying plugins, so a patch row whose
+      # `name` has drifted from the package name — which this repository shipped
+      # once — dumps a clean tree with exit 0 and empty stderr while a real boot
+      # dies with ERR_MODULE_NOT_FOUND. A registration conflict
+      # (`tool "git_status" is already registered`) hides exactly the same way.
+      # The row's package is resolved against the profile at boot, so this is
+      # the cheapest rung that can see either failure.
+      #
+      # The plugin manager drives pnpm for profile installs and has no fallback:
+      # it reports a `pnpm-missing` failure rather than degrading, so pnpm is
+      # installed explicitly here rather than assumed to be on the image.
+      #
+      # Linux only, deliberately. Under Git Bash a POSIX path handed to a native
+      # node process is rewritten (`/d/a/repo` becomes `D:\d\a\repo`), and the
+      # harness entry point is reached through a shell wrapper, so a Windows run
+      # of this step can fail for reasons that have nothing to do with the
+      # plugin — and a gate that goes red on infrastructure gets switched off.
+      # The failure class it catches is resolved by the harness at boot and is
+      # platform-independent. Windows boot stays a manual rung; widen this only
+      # once there is a green Windows run to point at.
+      - name: Install pnpm (the plugin manager has no other package manager)
+        if: runner.os == 'Linux'
+        run: npm install -g pnpm@12.4.2
+
+      - name: Boot check — the plugin must actually start
+        if: runner.os == 'Linux'
+        env:
+          BOOT_HOME: ${{ runner.temp }}/dsh-home
+          BOOT_PORT: '31870'
+        run: bash tools/boot-check.sh

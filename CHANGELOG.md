@@ -8,6 +8,32 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+## [1.0.1] — 2026-09-21
+
+CI, packaging and release plumbing. No runtime behaviour changed and no tool
+signature moved, so upgrading from 1.0.0 is a no-op for anyone already running it.
+
+### Added
+
+- `tools/boot-check.sh` — installs the plugin into a throwaway harness home and
+  requires a real `--port` boot to print a listen URL with an empty stderr. A
+  plugin that cannot start still passes the suite, `--dump-config` and the
+  packaging self-check, because a patch row's package name is resolved against
+  the profile at boot and nothing cheaper than a boot applies the plugin. Run it
+  after `npm install --no-save @deepseek-ai/dsh` and
+  `node tools/link-harness-peers.mjs`, which is what makes the plugin's own peer
+  imports resolvable.
+- A CI step that runs it on the Linux legs of the matrix.
+
+### Fixed
+
+- The release workflow now creates the GitHub Release. It previously carried
+  `permissions: contents: read` and had no such step, so pushing a tag left the
+  repository's Releases panel frozen at the previous version: the tag and the
+  commit had moved, and the front page looked like nothing had happened.
+- The Release body is the section of this file for that version rather than a
+  second account of it, and it states plainly when `npm publish` did not succeed.
+
 ## [1.0.0] — 2026-09-21
 
 First public release. The 0.1.0 entry below is the development series; 1.0.0 is

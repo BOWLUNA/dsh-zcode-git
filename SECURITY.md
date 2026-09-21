@@ -76,7 +76,7 @@ the model's behalf**.
 
 | Version | Supported |
 | --- | --- |
-| `1.0.0` | ✅ |
+| `1.0.1` | ✅ |
 | anything older | ❌ |
 
 Only the latest published version is supported. The plugin is versioned

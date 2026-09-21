@@ -26,6 +26,13 @@ node tools/verify-doc-numbers.mjs              # documented counts vs the real r
 LAB="$PWD/.lab/dsh-home"
 DSH_HOME="$LAB" dsh plugin --profile web add "$PWD"
 DSH_HOME="$LAB" dsh --profile web --port 31870 --no-open
+
+# The same boot, asserted instead of eyeballed. Needs the harness install and
+# the peer link first, because the plugin imports its peers from its own
+# directory — without them this fails for reasons that are not the plugin.
+npm install --no-save @deepseek-ai/dsh@0.1.6-alpha.2
+node tools/link-harness-peers.mjs
+bash tools/boot-check.sh                       # BOOT_HOME / BOOT_PORT / DSH_BIN
 ```
 
 ## What must not break
@@ -57,7 +64,9 @@ test named in parentheses is what keeps it from coming back.
    plugin once made the shared profile unbootable (`tool "git_status" is
    already registered`) while `--dump-config` reported a clean tree with
    `exit 0` and empty stderr. A green dump is not evidence that the plugin
-   loads. (`tools/` mirrors this; the boot smoke lives in the workspace rules)
+   loads. `tools/boot-check.sh` is the assertion form of this rung and the
+   Linux legs of `test.yml` run it. (`test/` cannot see it: the suite never
+   mounts the plugin.)
 
 4. **Tool names are a global namespace.** `git_status`, `git_diff`, `git_log`,
    `git_commit`, `git_branch`, `git_stash` are the names every git plugin
@@ -101,6 +110,16 @@ test named in parentheses is what keeps it from coming back.
    Behavioural settings (`user.name`, `core.autocrlf`, hooks) are deliberately
    *not* pinned. (`test/e2e.test.js` acceptance 5)
 
+10. **A rename touches four places, and `cordis.patch.yml` is the one that gets
+    forgotten.** `package.json`'s `name`, the repository name, the directory
+    name and the `name:` of the patch row in `cordis.patch.yml` all have to
+    agree. The row's value is resolved as a package name against the profile
+    *at boot*, so a stale one produces `ERR_MODULE_NOT_FOUND` and a profile that
+    will not start, while `--dump-config` still reports a clean, exit-0 tree. A
+    sibling plugin in this family shipped exactly that. Verify with
+    `bash tools/boot-check.sh`, which fails on the mutation and passes on the
+    fix. (`test/` cannot see it; the boot smoke in CI is the guard)
+
 ## Platform and version matrix
 
 | Axis | Values that must work | Why |
@@ -125,5 +144,13 @@ Cheapest first. Do not claim a rung you did not climb.
    you can compare against `git` run by hand. This is the only rung that
    catches a renderer or a schema mismatch the provider would reject.
 
-Rungs 1 and 2 run in CI. Rungs 3 and 4 are manual because they need a harness
-install.
+Rungs 1 and 2 run in CI on every platform. Rung 3 runs in CI on the Linux legs
+(`tools/boot-check.sh`): a boot needs a harness install, and the plugin manager
+drives pnpm with no fallback, which the Windows image does not carry. Run rung 3
+by hand on Windows whenever you touch anything that affects mounting — under Git
+Bash a POSIX path handed to a native node process is rewritten (`/d/a/repo`
+becomes `D:\d\a\repo`) and the harness entry point is reached through a shell
+wrapper, so a scripted Windows boot can fail for reasons that are not the
+plugin's. Widening the CI step to Windows needs a green Windows run to point at
+first; a gate that goes red on infrastructure gets switched off. Rung 4 stays
+manual because it needs a model credential.

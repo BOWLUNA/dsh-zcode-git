@@ -39,7 +39,16 @@ git add -A && git commit -m "release: vX.Y.Z"
 git tag -a vX.Y.Z -m "vX.Y.Z"
 git push && git push origin vX.Y.Z
 gh run list --repo <owner>/<repo> --limit 6
+gh release view vX.Y.Z --repo <owner>/<repo>
 ```
+
+The last command is not a formality. `release.yml` creates the GitHub Release
+itself, so a tag push should move the repository's Releases panel — and if that
+panel is still showing the previous version while the tag and the commit have
+both moved, the Release step did not run. A `permissions: contents: read` on the
+workflow is the usual cause; creating a Release needs `contents: write`. Note
+that the Release step carries `if: always()` on purpose, so a Release is still
+created when `npm publish` fails for want of credentials.
 
 ## A green publish job is not a published package
 

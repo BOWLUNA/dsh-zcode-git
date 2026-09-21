@@ -1,6 +1,6 @@
 {
   "name": "dsh-zcode-git",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "First-class Git tools for DeepSeek Harness agents: structured status/diff/log/branch/commit/stash whose output is immune to the user's pager, color, quotepath and alias configuration; every invocation is an argv array so no shell ever sees an argument; mutations go through the harness approval service.",
   "license": "MIT",
   "type": "module",

@@ -37,7 +37,14 @@ git add -A && git commit -m "release: vX.Y.Z"
 git tag -a vX.Y.Z -m "vX.Y.Z"
 git push && git push origin vX.Y.Z
 gh run list --repo <owner>/<repo> --limit 6
+gh release view vX.Y.Z --repo <owner>/<repo>
 ```
+
+最后一条不是走过场。GitHub Release 是 `release.yml` 自己建的，所以推 tag 之后
+仓库的 Releases 面板应该跟着动 —— 如果 tag 与提交都动了、面板却还停在上一个版本，
+那就是建 Release 那一步没有跑。常见原因是工作流的 `permissions: contents: read`，
+建 Release 需要 `contents: write`。另注意建 Release 那一步是**故意**带
+`if: always()` 的，这样即使 `npm publish` 因为缺凭据失败，Release 仍然会被建出来。
 
 ## publish job 变绿 ≠ 包已经发出去了
 
