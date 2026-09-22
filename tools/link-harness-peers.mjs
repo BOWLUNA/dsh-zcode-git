@@ -32,24 +32,27 @@ const PEERS = ["dsh-tools", "schemastery", "cordis"];
 const printOnly = process.argv.includes("--print");
 
 /**
- * Standard install locations for a harness, newest conventions first.
+ * Where to look for a harness to link peers out of.
  *
- * `DSH_INSTALL` is the supported way to point at a harness that lives somewhere
- * unexpected, and it is deliberately checked before the hardcoded guesses — when
- * the harness moved once already, every literal below went stale at once.
+ * `DSH_INSTALL` is the supported way to point at one, and it is the **only**
+ * Windows source on purpose. This file previously carried a literal path to one
+ * developer's harness, which is worse than useless in a published package: it
+ * goes stale the moment that harness moves (it moved once, on 2026-09-21), and
+ * every reader silently inherits a machine-specific guess. A probe that misses
+ * costs one `stat`; a literal that is wrong costs a confusing failure.
  *
- * The Windows literal was `C:/BL/AI/DSH Desktop/resources/app` until 2026-09-21,
- * when the desktop build was relocated to `C:/BL/AI/dsh-harness` and the old
- * directory was deleted. The `%APPDATA%\dsh-desktop\harness\profiles` probe went
- * with it: that path no longer exists, so probing it only ever wasted a stat.
- * Do not reintroduce either — set `DSH_INSTALL` instead.
+ * So: set `DSH_INSTALL` to the harness root (the directory with
+ * `node_modules/@deepseek-ai/dsh` under it — the desktop harness at
+ * `<install>/harness`, or the package directory of a global install). On Linux
+ * the conventional `~/.dsh/profiles` is also probed, because that mirror is a
+ * documented layout rather than a machine-specific path.
+ *
+ * If nothing is found the error below says exactly what to set.
  */
 function harnessRoots() {
 	const roots = [];
 	if (process.env.DSH_INSTALL !== undefined) roots.push(process.env.DSH_INSTALL);
-	if (process.platform === "win32") {
-		roots.push("C:/BL/AI/dsh-harness");
-	} else {
+	if (process.platform !== "win32") {
 		roots.push(join(process.env.HOME ?? "", ".dsh", "profiles"));
 	}
 	return roots.filter((root) => root.length > 0);

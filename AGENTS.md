@@ -48,9 +48,21 @@ somewhere else again. It tries, in order:
 5. nothing — **exit 2**, with the recipe to fix it
 
 Exit 2 means "the environment is missing something", and is deliberately
-distinct from exit 1, "an assertion failed". The harness moved once already
-(2026-09-21, `C:/BL/AI/DSH Desktop/resources/app` → `C:/BL/AI/dsh-harness`, old
-path deleted); when it moves again, set `DSH_INSTALL` rather than editing links.
+distinct from exit 1, "an assertion failed".
+
+**Nothing machine-specific is hardcoded, on purpose.** This repository used to
+name one developer's harness path; that path moved on 2026-09-21 and every
+reference went stale at once. `$DSH_INSTALL` is now the only way to point at a
+harness other than the repo-local install:
+
+```bash
+export DSH_INSTALL="<harness root>"     # the directory holding node_modules/@deepseek-ai/dsh
+node tools/boot-check.mjs --port 32070
+```
+
+`docs/MEASUREMENTS.md` § "The test lab" records what this project's own instance
+is made of and how it was built, so the numbers there can be reproduced without
+inheriting anybody's paths. The scripts only ever *read* from `DSH_INSTALL`.
 
 ## What must not break
 

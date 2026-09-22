@@ -2,10 +2,39 @@
 
 [English](README.md) | 中文
 
-给 DeepSeek Harness 智能体用的**一等公民 Git 工具**。
+[![test](https://github.com/BOWLUNA/dsh-zcode-git/actions/workflows/test.yml/badge.svg)](https://github.com/BOWLUNA/dsh-zcode-git/actions/workflows/test.yml)
+[![license](https://img.shields.io/badge/license-MIT-6b7a3f.svg)](LICENSE)
+[![dsh](https://img.shields.io/badge/dsh-0.1.5--rc.2%20%7C%200.1.6--alpha.x-4a443c.svg)](#环境要求)
+[![node](https://img.shields.io/badge/node-%E2%89%A520-4a443c.svg)](#环境要求)
 
-DSH 本身没有任何 git 工具，模型只能通过 `bash` 手搓命令。这个插件注册六个结构化工具，
-并解决 `bash` 路线的三个根本问题：
+给 [DeepSeek Harness](https://github.com/deepseek-ai) 智能体用的**六个结构化 Git 工具**：
+status、diff、log、branch、commit、stash —— 输出被钉死、参数不经过任何 shell、
+每一次写入都走 harness 的审批服务。
+
+DSH 本身没有任何 git 工具，模型只能通过 `bash` 手搓命令。这个插件就是来替掉那条路的。
+
+```bash
+dsh plugin --profile web add dsh-zcode-git
+```
+
+![一条提交信息，两条路 —— shell 命令行与 argv 数组之间被实测出来的差异](assets/how-it-works.svg)
+
+## 与 ZCode 的关系
+
+[ZCode](https://github.com/zai-org/ZCode) 是这个插件做法的来源，而且它的 git 层比大多数实现都扎实。
+下表刻意写成**可核对**的：每条 ZCode 的主张都指到文件与行号，每条「多了什么」都指到一条能跑的命令，
+**而本插件还没追上的地方，那一行会直接写「暂未超过」，不会略去**。
+
+| ZCode 有什么 | 本插件取了什么 | 本插件多了什么（**优于**在哪） | 证据 |
+| --- | --- | --- | --- |
+| `workflow-git-world-read.ts:12` —— 「只读是**构造**出来的，不是检查出来的」：只能构造出五个只读子命令，且没有任何一条路径能拼出 shell 字符串 | 同一个前提：每次 git 调用走 `ctx.subprocess.spawn` 的 argv 数组，任何 shell 都看不到参数 | **写操作那一半，并且关在审批后面。** ZCode 的 `git.*` 按构造没有写路径；本插件增加了 commit / stash / branch 三类写操作，且 `ctx.approval` 是 **fail-closed** —— 没挂审批服务时**拒绝执行**而不是放行 | `test/exec.test.js`（"builds an argv array and never a shell command string"）；`node tools/measure.mjs --only argv` |
+| `workflow-git-world-read.ts:80` —— `GIT_REF_PATTERN`，首字符不许是 `-`（原文：「这条规则里唯一**安全相关**的部分」） | 同一条规则：`validateRevision` 拒绝以 `-` 开头的 revision | 把同一条规则扩到另外三个入口 —— 分支名、提交信息、路径，各自有验证器与单元断言 | `src/validate.js:44,118,137,167`；`test/validate.test.js` |
+| `workflow-git-world-read.ts:95` —— `GIT_STATUS_ARGV` 用了 `-z`，注释里记着 `core.quotePath` 与「含换行的文件名」 | 同样的 `-z`，扩到 `status` 与 `stash list` | 字段分隔符**不同，而且我这边是更弱的选择**：本插件用 `%x1f`，ZCode 用 `%x00`。NUL 在 git 对象里根本不可能出现，所以**这一行本插件暂未超过 ZCode** | `index.js:401`、`index.js:682`；转义语法的坑记在 `index.js:466` |
+| `git-snapshot.ts:127` —— `execFile(GIT_COMMAND, args, {cwd, maxBuffer, timeout})`：走了 argv，但**不钉 `-c`、也不覆盖 `env`** | 同样走 argv 数组 | **钉死十项 `git -c` 覆盖**（`color.ui`、`core.pager`、`core.quotepath`、`diff.external`、`status.relativePaths`、`log.showSignature` 等），用户的配置改不了模型读到的字节。ZCode 反而把 `git -c` 列进了它 **bash 通道**的 `GIT_GLOBAL_DANGEROUS_FLAGS` —— 在 shell 里那样做是对的，因为那个 flag 来自用户；而这里它由我们构造，且从不经过 shell | `src/exec.js:35`；`docs/MEASUREMENTS.md` 的「用户的配置无法改变输出形态」一节 |
+| `workflow-git-world-read.ts:28` —— **单一路径基准**：线上一律仓库根相对，再用 `rev-parse --show-prefix` 剥前缀；并写明「工作区就是仓库根时三者恰好相同，所以它会一直不被发现」 | —— | **暂未超过。** 本插件这一层完全没做：会话 `cwd` 在子目录时交出仓库根相对路径，把那些路径喂回去会得到 `ok: true, files: [], message: ""` —— 静默地什么都没有。已建缺陷档 | `node tools/_probe-pathbase.mjs`；`plugins/git/dsh-zcode-git/issues/GIT-4` |
+| `git-snapshot.ts:168` —— `git status` 按 **2k 字符**截断（而不是按文件条目数），以保持 provider-visible prompt 形状稳定 | 同一个关切：输出要有边界 | **按条目数与行数分别限，并把截断如实交出去而不是静默截断**：`maxDiffLines` / `maxLogEntries` / `clampInteger`，接缝溢出时报 `truncated: true` 并给出溢出路径（实测：21.6 MiB 的补丁到模型手上是 264 KB） | `node tools/measure.mjs --only spill`；`test/validate.test.js` |
+
+## 本插件针对 `bash` 做了什么
 
 | 用 `bash` 的问题 | 本插件的做法 |
 | --- | --- |

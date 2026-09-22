@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" width="720" height="400" role="img" aria-labelledby="t d">
+  <title id="t">dsh-zcode-git: one commit message, two paths</title>
+  <desc id="d">A diagram contrasting a shell command line with an argv array, annotated with the
+  measured byte counts, and a strip of the four measurements from docs/MEASUREMENTS.md.</desc>
+
+  <defs>
+    <!-- Halftone: the paper texture. Kept faint so the diagram reads as ink on paper. -->
+    <pattern id="dots" width="6" height="6" patternUnits="userSpaceOnUse">
+      <circle cx="1.5" cy="1.5" r="0.9" fill="#1f1c18" opacity="0.07"/>
+    </pattern>
+    <!-- A hand-drawn-ish rough edge, reused for every box. -->
+    <filter id="rough" x="-4%" y="-4%" width="108%" height="108%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.021" numOctaves="2" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="1.6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,1 L9,5 L0,9" fill="none" stroke="#1f1c18" stroke-width="1.3"/>
+    </marker>
+    <font-face family="system"/></defs>
+
+  <rect width="720" height="400" fill="#faf7ef"/>
+  <rect width="720" height="400" fill="url(#dots)"/>
+
+  <g font-family="ui-sans-serif, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" fill="#1f1c18">
+
+    <!-- ── heading ───────────────────────────────────────────── -->
+    <text x="32" y="42" font-size="19" font-weight="600" letter-spacing="0.2">one commit message, two paths</text>
+    <text x="32" y="62" font-size="11.5" fill="#6f675c">
+      same bytes sent · read back from the repository afterwards
+    </text>
+
+    <!-- ── left: the shell ───────────────────────────────────── -->
+    <g filter="url(#rough)">
+      <rect x="32" y="86" width="300" height="150" rx="3" fill="#f3ece0" stroke="#c9bfae" stroke-width="1"/>
+    </g>
+    <text x="48" y="110" font-size="12.5" font-weight="600" fill="#8a4a33">bash -c</text>
+    <text x="48" y="132" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#4a443c">
+      git commit -m "$msg"
+    </text>
+    <text x="48" y="150" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#4a443c">
+      sent 114 B
+    </text>
+
+    <!-- the corruption, struck through -->
+    <text x="48" y="176" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#8a4a33">
+      received 144 B
+    </text>
+    <path d="M48,171 L150,171" stroke="#b4553a" stroke-width="1.4"/>
+    <text x="48" y="196" font-size="10.5" fill="#8a4a33">
+      $(echo pwned) → pwned · `id` → uid=197609(BOWLUNA)
+    </text>
+    <text x="48" y="214" font-size="10.5" fill="#8a4a33">
+      gid=197121 — written into the commit
+    </text>
+
+    <!-- ── right: the argv array ─────────────────────────────── -->
+    <g filter="url(#rough)">
+      <rect x="388" y="86" width="300" height="150" rx="3" fill="#f2f5e9" stroke="#b9c09a" stroke-width="1"/>
+    </g>
+    <text x="404" y="110" font-size="12.5" font-weight="600" fill="#55632f">
+      ctx.subprocess.spawn(argv)
+    </text>
+    <text x="404" y="132" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#4a443c">
+      ["git","-c",…,"commit","-m",msg]
+    </text>
+    <text x="404" y="150" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#4a443c">
+      sent 114 B
+    </text>
+    <text x="404" y="176" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" font-weight="600" fill="#55632f">
+      received 114 B
+    </text>
+    <text x="404" y="196" font-size="10.5" fill="#55632f">
+      sha256 matches byte for byte · no shell parses
+    </text>
+    <text x="404" y="214" font-size="10.5" fill="#55632f">
+      %PATH%, $( ), backticks and newlines survive
+    </text>
+
+    <!-- the two arrows from a shared origin -->
+    <text x="352" y="120" font-size="11" fill="#6f675c" text-anchor="middle">message</text>
+    <path d="M352,126 C352,140 366,146 386,146" fill="none" stroke="#1f1c18" stroke-width="1.1" marker-end="url(#arrow)"/>
+    <path d="M352,126 C352,168 360,178 386,178" fill="none" stroke="#1f1c18" stroke-width="1.1" marker-end="url(#arrow)"/>
+
+    <!-- ── measured strip ────────────────────────────────────── -->
+    <path d="M32,258 L688,258" stroke="#d8cfc0" stroke-width="1"/>
+    <text x="32" y="280" font-size="11.5" font-weight="600" letter-spacing="0.3" fill="#6f675c">
+      MEASURED · docs/MEASUREMENTS.md · node tools/measure.mjs
+    </text>
+
+    <g font-size="11">
+      <!-- four cells, all four numbers traceable to the measurements document -->
+      <text x="32" y="308" font-size="21" font-weight="600" fill="#1f1c18">40<tspan font-size="12" font-weight="400" fill="#6f675c"> ms</tspan></text>
+      <text x="32" y="326" fill="#6f675c">git_status over 3000</text>
+      <text x="32" y="341" fill="#6f675c">changed files, complete</text>
+
+      <text x="204" y="308" font-size="21" font-weight="600" fill="#1f1c18">8<tspan font-size="12" font-weight="400" fill="#6f675c"> MiB</tspan></text>
+      <text x="204" y="326" fill="#6f675c">ceiling on a 21.6 MiB diff;</text>
+      <text x="204" y="341" fill="#6f675c">264 KB reaches the model</text>
+
+      <text x="392" y="308" font-size="21" font-weight="600" fill="#1f1c18">8/8<tspan font-size="12" font-weight="400" fill="#6f675c"> identical</tspan></text>
+      <text x="392" y="326" fill="#6f675c">parallel calls hash-equal</text>
+      <text x="392" y="341" fill="#6f675c">to the serial baseline</text>
+
+      <text x="566" y="308" font-size="21" font-weight="600" fill="#1f1c18">8<tspan font-size="12" font-weight="400" fill="#6f675c"> ms</tspan></text>
+      <text x="566" y="326" fill="#6f675c">to reap the git child</text>
+      <text x="566" y="341" fill="#6f675c">after a 1 ms deadline</text>
+    </g>
+
+    <text x="32" y="378" font-size="10" fill="#8b8377">
+      Every figure above is reproduced by one command; the seam that collects streams is a faithful
+      stand-in, git and the OS processes are real.
+    </text>
+  </g>
+</svg>

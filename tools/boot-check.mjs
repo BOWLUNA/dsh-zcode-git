@@ -189,10 +189,13 @@ if (harness.cmd === undefined) {
 	for (const t of harness.tried) console.error(`    · ${t}`);
 	console.error("");
 	console.error("  Point at one of these, then re-run:");
-	console.error('    export DSH_INSTALL="C:/BL/AI/dsh-harness"                                   # Windows desktop harness');
-	console.error('    export DSH_INSTALL="$HOME/.local/share/nodejs/node-v24.21.0-linux-x64/lib/node_modules/@deepseek-ai/dsh"');
+	console.error('    export DSH_INSTALL="<harness root>"    # the directory holding node_modules/@deepseek-ai/dsh');
+	console.error('    export DSH_INSTALL="$HOME/.local/share/nodejs/<node>/lib/node_modules/@deepseek-ai/dsh"');
 	console.error("    npm install --no-save --no-audit --no-fund @deepseek-ai/dsh@0.1.6-alpha.2  # or the local install");
 	console.error("    node tools/boot-check.mjs --dsh-bin <path/to/@deepseek-ai/dsh/lib/bin.js>   # or by hand");
+	console.error("");
+	console.error("  No machine-specific path is baked in here on purpose: this file used to name one");
+	console.error("  developer's harness, and it went stale when that harness moved.");
 	process.exit(2);
 }
 

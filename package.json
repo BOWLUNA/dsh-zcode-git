@@ -48,6 +48,7 @@
     "index.js",
     "src",
     "cordis.patch.yml",
+    "assets",
     "README.md",
     "README.zh.md",
     "CHANGELOG.md",

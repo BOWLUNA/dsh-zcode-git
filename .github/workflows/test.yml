@@ -111,7 +111,7 @@ jobs:
           node -e '
             const fs = require("fs");
             const entries = JSON.parse(fs.readFileSync(process.argv[1], "utf8"))[0].files.map((f) => f.path);
-            const need = ["index.js", "cordis.patch.yml", "package.json", "README.md", "README.zh.md", "LICENSE"];
+            const need = ["index.js", "cordis.patch.yml", "package.json", "README.md", "README.zh.md", "LICENSE", "assets/how-it-works.svg"];
             const missing = need.filter((name) => !entries.includes(name));
             const hasSource = entries.some((path) => path.startsWith("src/"));
             const stray = entries.filter((path) => /^(test|tools|docs|\.refs)\//.test(path));

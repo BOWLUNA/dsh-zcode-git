@@ -2,11 +2,41 @@
 
 English | [中文](README.zh.md)
 
-First-class Git tools for [DeepSeek Harness](https://github.com/deepseek-ai) agents.
+[![test](https://github.com/BOWLUNA/dsh-zcode-git/actions/workflows/test.yml/badge.svg)](https://github.com/BOWLUNA/dsh-zcode-git/actions/workflows/test.yml)
+[![license](https://img.shields.io/badge/license-MIT-6b7a3f.svg)](LICENSE)
+[![dsh](https://img.shields.io/badge/dsh-0.1.5--rc.2%20%7C%200.1.6--alpha.x-4a443c.svg)](#requirements)
+[![node](https://img.shields.io/badge/node-%E2%89%A520-4a443c.svg)](#requirements)
 
-DeepSeek Harness ships no git tooling, so an agent drives git through `bash`.
-This plugin registers six structured tools instead, and fixes the three things
-that makes `bash` a bad fit:
+Six structured Git tools for [DeepSeek Harness](https://github.com/deepseek-ai)
+agents: status, diff, log, branch, commit and stash — with the output pinned, no
+shell in the path, and every write behind the harness approval service.
+
+The harness ships no git tooling, so an agent drives `bash`. This replaces that.
+
+```bash
+dsh plugin --profile web add dsh-zcode-git
+```
+
+![one commit message, two paths — the measured difference between a shell command line and an argv array](assets/how-it-works.svg)
+
+## How it compares with ZCode
+
+[ZCode](https://github.com/zai-org/ZCode) is where this plugin's approach comes
+from, and its git layer is well ahead of most. The table is written to be
+checkable: every ZCode claim names a file and line, every "adds" claim names
+something you can run, and **where this plugin has not caught up the row says so
+rather than being left out**.
+
+| What ZCode has | What this plugin took | What this plugin adds (**better**, where it is) | Evidence |
+| --- | --- | --- | --- |
+| `workflow-git-world-read.ts:12` — "只读是**构造**出来的，不是检查出来的": only five read-only subcommands can be built, and no path can produce a shell string | The same premise: every git call goes through `ctx.subprocess.spawn` with an argv array, so no shell sees an argument | **The write half, behind an approval gate.** ZCode's `git.*` has no write path by construction; this plugin adds commit / stash / branch mutations, and `ctx.approval` is **fail-closed** — with no approval service mounted the mutation is refused, not allowed | `test/exec.test.js` ("builds an argv array and never a shell command string"); `node tools/measure.mjs --only argv` |
+| `workflow-git-world-read.ts:80` — `GIT_REF_PATTERN`, first character may not be `-` ("the only security-relevant part of this rule") | The same rule: `validateRevision` rejects a revision starting with `-` | Extended to the other three entry points — branch names, commit messages and paths each have a validator and unit assertions | `src/validate.js:44,118,137,167`; `test/validate.test.js` |
+| `workflow-git-world-read.ts:95` — `GIT_STATUS_ARGV` uses `-z`, with the comment recording `core.quotePath` and newline-in-filename | The same `-z`, extended to `status` and `stash list` | The field separator is **different, and mine is the weaker choice**: this plugin uses `%x1f`, ZCode uses `%x00`. NUL cannot occur in a git object at all, so **on this row this plugin has not overtaken ZCode** | `index.js:401`, `index.js:682`; the escape-grammar trap is documented at `index.js:466` |
+| `git-snapshot.ts:127` — `execFile(GIT_COMMAND, args, {cwd, maxBuffer, timeout})`: an argv array, but **no `-c` overrides and no `env`** | The argv array | **Ten pinned `git -c` overrides** (`color.ui`, `core.pager`, `core.quotepath`, `diff.external`, `status.relativePaths`, `log.showSignature`, …), so the user's configuration cannot reshape what the model reads. ZCode instead lists `git -c` in `GIT_GLOBAL_DANGEROUS_FLAGS` for its *bash* channel — reasonable there, since in a shell the flag is attacker-supplied; here it is constructed by us and never reaches a shell | `src/exec.js:35`; `docs/MEASUREMENTS.md` § "the user's configuration cannot reshape the output" |
+| `workflow-git-world-read.ts:28` — **one path base**: repo-root-relative on the wire, prefix stripped via `rev-parse --show-prefix`, with the note that the bug hides whenever the workspace *is* the repo root | — | **Not overtaken.** This plugin does not do this layer at all: with the session `cwd` inside a subdirectory it hands back repo-root-relative paths, and feeding them straight back returns `ok: true, files: [], message: ""` — silently nothing. Filed as a defect | `node tools/_probe-pathbase.mjs`; `plugins/git/dsh-zcode-git/issues/GIT-4` |
+| `git-snapshot.ts:168` — `git status` is truncated at **2k characters**, not by entry count, to keep the provider-visible prompt shape stable | The same concern: keep the output bounded | **Bounded by items and lines, with the truncation reported rather than silent**: `maxDiffLines` / `maxLogEntries` / `clampInteger`, and `truncated: true` plus a spill path when the seam overflows (measured: a 21.6 MiB diff reaches the model as 264 KB) | `node tools/measure.mjs --only spill`; `test/validate.test.js` |
+
+## What it does about `bash`
 
 | Problem with `bash` | What this plugin does |
 | --- | --- |
