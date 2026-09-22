@@ -32,8 +32,25 @@ DSH_HOME="$LAB" dsh --profile web --port 31870 --no-open
 # directory — without them this fails for reasons that are not the plugin.
 npm install --no-save @deepseek-ai/dsh@0.1.6-alpha.2
 node tools/link-harness-peers.mjs
-bash tools/boot-check.sh                       # BOOT_HOME / BOOT_PORT / DSH_BIN
+node tools/boot-check.mjs --port 31870         # --dsh-bin / --home / --settle
 ```
+
+## Finding a harness
+
+`tools/boot-check.mjs` never assumes `dsh` is on `PATH` — a development box has
+a machine-wide install, CI has a `node_modules` one, and a desktop harness lives
+somewhere else again. It tries, in order:
+
+1. `--dsh-bin <path>` — explicit, wins over everything
+2. `$DSH_INSTALL` — the supported way to point at a harness
+3. `<repo>/node_modules/@deepseek-ai/dsh` — the CI layout
+4. `dsh` on `PATH`
+5. nothing — **exit 2**, with the recipe to fix it
+
+Exit 2 means "the environment is missing something", and is deliberately
+distinct from exit 1, "an assertion failed". The harness moved once already
+(2026-09-21, `C:/BL/AI/DSH Desktop/resources/app` → `C:/BL/AI/dsh-harness`, old
+path deleted); when it moves again, set `DSH_INSTALL` rather than editing links.
 
 ## What must not break
 
@@ -64,8 +81,8 @@ test named in parentheses is what keeps it from coming back.
    plugin once made the shared profile unbootable (`tool "git_status" is
    already registered`) while `--dump-config` reported a clean tree with
    `exit 0` and empty stderr. A green dump is not evidence that the plugin
-   loads. `tools/boot-check.sh` is the assertion form of this rung and the
-   Linux legs of `test.yml` run it. (`test/` cannot see it: the suite never
+   loads. `tools/boot-check.mjs` is the assertion form of this rung and every
+   CI leg runs it except Node 20. (`test/` cannot see it: the suite never
    mounts the plugin.)
 
 4. **Tool names are a global namespace.** `git_status`, `git_diff`, `git_log`,
@@ -117,8 +134,9 @@ test named in parentheses is what keeps it from coming back.
     *at boot*, so a stale one produces `ERR_MODULE_NOT_FOUND` and a profile that
     will not start, while `--dump-config` still reports a clean, exit-0 tree. A
     sibling plugin in this family shipped exactly that. Verify with
-    `bash tools/boot-check.sh`, which fails on the mutation and passes on the
-    fix. (`test/` cannot see it; the boot smoke in CI is the guard)
+    `node tools/boot-check.mjs --port 31870`, which fails on the mutation and
+    passes on the fix. (`test/` cannot see it; the boot smoke in CI is the
+    guard)
 
 ## Platform and version matrix
 
@@ -144,25 +162,34 @@ Cheapest first. Do not claim a rung you did not climb.
    you can compare against `git` run by hand. This is the only rung that
    catches a renderer or a schema mismatch the provider would reject.
 
-Rungs 1 and 2 run in CI on every platform. Rung 3 runs in CI on the Linux leg
-that uses Node 24 (`tools/boot-check.sh`), for two measured reasons rather than
-by preference:
+Rungs 1 and 2 run in CI on every platform. Rung 3 runs in CI on **every leg
+except Node 20** (`node tools/boot-check.mjs --port 31870`), which is only
+possible because the guard is a Node script: a bash guard could never have run
+on Windows, where Git Bash rewrites a POSIX path handed to a native node process
+(`/d/a/repo` becomes `D:\d\a\repo`). The plugin manager does drive pnpm with no
+fallback, which the Windows image does not carry, so the workflow installs it
+rather than assuming it.
 
-- **Not Windows.** A boot needs a harness install, and the plugin manager drives
-  pnpm with no fallback, which the Windows image does not carry. Under Git Bash a
-  POSIX path handed to a native node process is also rewritten (`/d/a/repo`
-  becomes `D:\d\a\repo`), so a scripted Windows boot can fail for reasons that
-  are not the plugin's. Run rung 3 by hand on Windows whenever you touch
-  something that affects mounting; widening the CI step needs a green Windows run
-  to point at first.
 - **Not Node 20.** On that leg `dsh --version` prints nothing and
   `dsh plugin --profile web add <repo>` exits 0 having written nothing — both
   streams empty, and the plugin simply absent from the composed tree. The plugin
   never installs, so no boot can succeed there. That is the harness on that
-  runtime rather than this plugin; the exact cause is not yet isolated, and the
-  workspace ledger carries it as GIT-3.
+  runtime rather than this plugin; the exact cause is not fully isolated, and the
+  workspace ledger carries it as GIT-3. The skip is announced with a
+  `::warning::` step: a silent skip is the same as no guard.
 
-Either way the principle is the same: a gate that goes red for a reason that is
-not the plugin's gets switched off, so a red leg is a reason to narrow the gate
-and record why, not to leave it red. Rung 4 stays manual because it needs a model
-credential.
+The principle, in both directions: a gate that goes red for a reason that is not
+the plugin's gets switched off — and so does a gate that goes green for one. Two
+measured examples live in this repository's history:
+
+- The first version of this guard assumed `dsh` was on `PATH`. On a development
+  box it is a machine-wide install; in CI it is a `node_modules` one. All three
+  Linux legs went red reporting `plugin add exited 127`, which reads like a
+  plugin fault.
+- The first version of assertion C accepted a single successful `net.connect`.
+  Measured: when the plugin's entry throws, the harness binds the port, serves
+  for about 200 ms, and only then dies — so a broken plugin was reported as
+  booting. C now requires the port to still be answering, with the process
+  alive, `--settle` ms later.
+
+Rung 4 stays manual because it needs a model credential.

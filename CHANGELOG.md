@@ -8,6 +8,22 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+### Changed
+
+- `tools/boot-check.sh` became `tools/boot-check.mjs`. A bash guard could only
+  ever run on Linux — Git Bash rewrites a POSIX path handed to a native node
+  process — so it could never cover Windows. The Node one runs on every CI leg
+  except Node 20.
+- Assertion C now requires the port to still be answering, with the process
+  still alive, two seconds later. Measured: when the plugin's entry throws, the
+  harness binds the port, serves for about 200 ms, and only then dies, so the
+  previous single-connect form reported a broken plugin as booting.
+- The guard locates its harness through `--dsh-bin`, then `$DSH_INSTALL`, then
+  `<repo>/node_modules`, then `PATH`, and exits 2 rather than 1 when none is
+  found — an environment problem is not a plugin problem.
+- `.gitignore` dropped the trailing slash on `node_modules`, which matched only
+  a directory and therefore failed to ignore a symlink of that name.
+
 ## [1.0.1] — 2026-09-21
 
 CI, packaging and release plumbing. No runtime behaviour changed and no tool

@@ -1,8 +1,13 @@
-node_modules/
-.refs/
-# Throwaway harness home used by tools/boot-check.sh. It holds a whole profile
+# No trailing slash, deliberately. `node_modules/` matches only a *directory*,
+# so a symlink named `node_modules` is not ignored and is committed as mode
+# 120000 — a sibling repository in this family did exactly that, pointing at a
+# directory that had since been deleted. Without the slash the name is ignored
+# whether it is a directory, a file or a link.
+node_modules
+.refs
+# Throwaway harness home used by tools/boot-check.mjs. It holds a whole profile
 # plus its installed plugins, so it must never be committed.
-.lab/
+.lab
 *.log
 .DS_Store
 .idea/

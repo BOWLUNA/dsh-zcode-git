@@ -31,13 +31,24 @@ const SCOPE = join(REPO, "node_modules", "@deepseek-ai");
 const PEERS = ["dsh-tools", "schemastery", "cordis"];
 const printOnly = process.argv.includes("--print");
 
-/** Standard install locations for a harness, newest conventions first. */
+/**
+ * Standard install locations for a harness, newest conventions first.
+ *
+ * `DSH_INSTALL` is the supported way to point at a harness that lives somewhere
+ * unexpected, and it is deliberately checked before the hardcoded guesses — when
+ * the harness moved once already, every literal below went stale at once.
+ *
+ * The Windows literal was `C:/BL/AI/DSH Desktop/resources/app` until 2026-09-21,
+ * when the desktop build was relocated to `C:/BL/AI/dsh-harness` and the old
+ * directory was deleted. The `%APPDATA%\dsh-desktop\harness\profiles` probe went
+ * with it: that path no longer exists, so probing it only ever wasted a stat.
+ * Do not reintroduce either — set `DSH_INSTALL` instead.
+ */
 function harnessRoots() {
 	const roots = [];
 	if (process.env.DSH_INSTALL !== undefined) roots.push(process.env.DSH_INSTALL);
 	if (process.platform === "win32") {
-		roots.push("C:/BL/AI/DSH Desktop/resources/app");
-		roots.push(join(process.env.APPDATA ?? "", "dsh-desktop", "harness", "profiles"));
+		roots.push("C:/BL/AI/dsh-harness");
 	} else {
 		roots.push(join(process.env.HOME ?? "", ".dsh", "profiles"));
 	}

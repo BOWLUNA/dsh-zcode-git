@@ -142,35 +142,34 @@ jobs:
       # The row's package is resolved against the profile at boot, so this is
       # the cheapest rung that can see either failure.
       #
+      # It is a Node script, and therefore runs on **every** leg except Node 20.
+      # A bash guard could only ever have run on Linux: under Git Bash a POSIX
+      # path handed to a native node process is rewritten (`/d/a/repo` becomes
+      # `D:\d\a\repo`), so a Windows run fails for reasons that have nothing to
+      # do with the plugin. "Our implementation cannot" is not the same claim as
+      # "the platform cannot".
+      #
       # The plugin manager drives pnpm for profile installs and has no fallback:
       # it reports a `pnpm-missing` failure rather than degrading, so pnpm is
-      # installed explicitly here rather than assumed to be on the image.
+      # installed explicitly instead of being assumed to be on the image. The
+      # version is pinned here rather than taken from the runner.
       #
-      # Linux and Node 24 only.
-      #
-      # Linux, deliberately: under Git Bash a POSIX path handed to a native node
-      # process is rewritten (`/d/a/repo` becomes `D:\d\a\repo`) and the harness
-      # entry point is reached through a shell wrapper, so a Windows run of this
-      # step can fail for reasons that have nothing to do with the plugin — and a
-      # gate that goes red on infrastructure gets switched off. The failure class
-      # it catches is resolved by the harness at boot and is platform-independent.
-      # Windows boot stays a manual rung.
-      #
-      # Not Node 20, on measured evidence: on that leg `dsh --version` prints
-      # nothing and `dsh plugin --profile web add <repo>` exits 0 having written
-      # nothing at all — both streams are empty and the plugin is absent from the
-      # composed tree (`--dump-config` succeeds, the row is simply not there).
-      # The plugin therefore never installs, and no boot can succeed. That is the
-      # harness or its package manager on that runtime rather than this plugin;
-      # see plugins/git/dsh-zcode-git/issues/GIT-3 in the workspace ledger. The
-      # suite still runs on 20, which is what that leg is there for.
-      - name: Install pnpm (the plugin manager has no other package manager)
-        if: runner.os == 'Linux' && matrix.node-version == '24'
-        run: npm install -g pnpm@12.4.2
+      # Node 20 is excluded on measured evidence: on that leg `dsh --version`
+      # prints nothing and `dsh plugin --profile web add <repo>` exits 0 having
+      # written nothing at all — both streams empty, the plugin absent from the
+      # composed tree. It never installs, so no boot can succeed. That is the
+      # harness on that runtime rather than this plugin; see
+      # plugins/git/dsh-zcode-git/issues/GIT-3 in the workspace ledger. The suite
+      # still runs on 20, which is what that leg is for.
+      - name: 'Install pnpm (the harness forwards `plugin add` to it)'
+        run: npm install -g pnpm@12
 
-      - name: Boot check — the plugin must actually start
-        if: runner.os == 'Linux' && matrix.node-version == '24'
-        env:
-          BOOT_HOME: ${{ runner.temp }}/dsh-home
-          BOOT_PORT: '31870'
-        run: bash tools/boot-check.sh
+      - name: '6) Boot check — the plugin must really install and start'
+        if: matrix.node-version != '20'
+        run: node tools/boot-check.mjs --port 31870
+
+      # A skipped guard and no guard are the same thing, so the skip is
+      # announced rather than silent.
+      - name: '6) skip notice (this leg cannot install the harness)'
+        if: matrix.node-version == '20'
+        run: echo "::warning::本腿（node ${{ matrix.node-version }}）跳过了启动守卫 —— 它装不出宿主。理由见 issues/GIT-3。"
