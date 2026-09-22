@@ -27,12 +27,27 @@ dsh plugin --profile web add dsh-zcode-git
 
 | ZCode 有什么 | 本插件取了什么 | 本插件多了什么（**优于**在哪） | 证据 |
 | --- | --- | --- | --- |
-| `workflow-git-world-read.ts:12` —— 「只读是**构造**出来的，不是检查出来的」：只能构造出五个只读子命令，且没有任何一条路径能拼出 shell 字符串 | 同一个前提：每次 git 调用走 `ctx.subprocess.spawn` 的 argv 数组，任何 shell 都看不到参数 | **写操作那一半，并且关在审批后面。** ZCode 的 `git.*` 按构造没有写路径；本插件增加了 commit / stash / branch 三类写操作，且 `ctx.approval` 是 **fail-closed** —— 没挂审批服务时**拒绝执行**而不是放行 | `test/exec.test.js`（"builds an argv array and never a shell command string"）；`node tools/measure.mjs --only argv` |
-| `workflow-git-world-read.ts:80` —— `GIT_REF_PATTERN`，首字符不许是 `-`（原文：「这条规则里唯一**安全相关**的部分」） | 同一条规则：`validateRevision` 拒绝以 `-` 开头的 revision | 把同一条规则扩到另外三个入口 —— 分支名、提交信息、路径，各自有验证器与单元断言 | `src/validate.js:44,118,137,167`；`test/validate.test.js` |
-| `workflow-git-world-read.ts:95` —— `GIT_STATUS_ARGV` 用了 `-z`，注释里记着 `core.quotePath` 与「含换行的文件名」 | 同样的 `-z`，扩到 `status` 与 `stash list` | 字段分隔符**不同，而且我这边是更弱的选择**：本插件用 `%x1f`，ZCode 用 `%x00`。NUL 在 git 对象里根本不可能出现，所以**这一行本插件暂未超过 ZCode** | `index.js:401`、`index.js:682`；转义语法的坑记在 `index.js:466` |
-| `git-snapshot.ts:127` —— `execFile(GIT_COMMAND, args, {cwd, maxBuffer, timeout})`：走了 argv，但**不钉 `-c`、也不覆盖 `env`** | 同样走 argv 数组 | **钉死十项 `git -c` 覆盖**（`color.ui`、`core.pager`、`core.quotepath`、`diff.external`、`status.relativePaths`、`log.showSignature` 等），用户的配置改不了模型读到的字节。ZCode 反而把 `git -c` 列进了它 **bash 通道**的 `GIT_GLOBAL_DANGEROUS_FLAGS` —— 在 shell 里那样做是对的，因为那个 flag 来自用户；而这里它由我们构造，且从不经过 shell | `src/exec.js:35`；`docs/MEASUREMENTS.md` 的「用户的配置无法改变输出形态」一节 |
-| `workflow-git-world-read.ts:28` —— **单一路径基准**：线上一律仓库根相对，再用 `rev-parse --show-prefix` 剥前缀；并写明「工作区就是仓库根时三者恰好相同，所以它会一直不被发现」 | —— | **暂未超过。** 本插件这一层完全没做：会话 `cwd` 在子目录时交出仓库根相对路径，把那些路径喂回去会得到 `ok: true, files: [], message: ""` —— 静默地什么都没有。已建缺陷档 | `node tools/_probe-pathbase.mjs`；`plugins/git/dsh-zcode-git/issues/GIT-4` |
-| `git-snapshot.ts:168` —— `git status` 按 **2k 字符**截断（而不是按文件条目数），以保持 provider-visible prompt 形状稳定 | 同一个关切：输出要有边界 | **按条目数与行数分别限，并把截断如实交出去而不是静默截断**：`maxDiffLines` / `maxLogEntries` / `clampInteger`，接缝溢出时报 `truncated: true` 并给出溢出路径（实测：21.6 MiB 的补丁到模型手上是 264 KB） | `node tools/measure.mjs --only spill`；`test/validate.test.js` |
+| `workflow-git-world-read.ts:12`（小节标题）与 `:14` —— 「只读是**构造**出来的，不是检查出来的」：只能构造出五个只读子命令，且没有任何一条路径能拼出 shell 字符串 | 同一个前提：每次 git 调用走 `ctx.subprocess.spawn` 的 argv 数组，任何 shell 都看不到参数 | **写操作那一半，并且关在审批后面。** ZCode 的 `git.*` 按构造没有写路径；本插件增加了 commit / stash / branch 三类写操作，且 `ctx.approval` 是 **fail-closed** —— 没挂审批服务时**拒绝执行**而不是放行 | `node tools/verify-comparison.mjs` → row 1 · `test/exec.test.js` · `node tools/measure.mjs --only argv` |
+| `workflow-git-world-read.ts:80` —— `GIT_REF_PATTERN`，以及 `:72` —— 「首字符不许是 `-` 是这条规则里唯一**安全相关**的部分」 | 同一条规则：`validateRevision` 拒绝以 `-` 开头的 revision | 扩到分支名、提交信息与路径 —— 而且这一行把「**为什么只有 revision 需要这条短横线规则**」写清楚了：所有用户提供的名字都排在 `--` 之后，所以 `git branch -- -b` 是名字而不是选项。ZCode 在这一点上也是**按构造**达到同样的效果 | `node tools/verify-comparison.mjs` → row 2（含 `--` 位置的断言）· `test/validate.test.js` |
+| `workflow-git-world-read.ts:22` —— `-z` 的契约，记着 `core.quotePath` 与「含换行的文件名」；`:98` —— `GIT_STATUS_ARGV` 里的那个 `-z`；`:26` —— 「我们自己的 `git log` 也已经用 `%x00` 分隔字段」 | 同样的 `-z`，扩到 `status` 与 `stash list` | 字段分隔符**不同，而且我这边是更弱的选择**：本插件用 `%x1f`，ZCode 用 `%x00`。NUL 在 git 对象里根本不可能出现，所以**这一行本插件暂未超过 ZCode** | `node tools/verify-comparison.mjs` → row 3 |
+| `git-snapshot.ts:127` —— `execFile(GIT_COMMAND, args, {cwd, maxBuffer, timeout})`：走了 argv，但**不钉 `-c`、也不覆盖 `env`** | 同样走 argv 数组 | **钉死十项 `git -c` 覆盖**（`color.ui`、`core.pager`、`core.quotepath`、`diff.external`、`status.relativePaths`、`log.showSignature`、`log.date`、`diff.noprefix`、`diff.mnemonicPrefix`、`advice.detachedHead`），用户的配置改不了模型读到的字节。ZCode 反而把 `git -c` 列进了它 **bash 通道**的 `GIT_GLOBAL_DANGEROUS_FLAGS` —— 在 shell 里那样做是对的，因为那个 flag 来自用户；而这里它由我们构造，且从不经过 shell | `node tools/verify-comparison.mjs` → row 4（逐名断言十项都真的到了 git） |
+| `workflow-git-world-read.ts:28` —— **单一路径基准**：线上一律仓库根相对，再用 `rev-parse --show-prefix` 剥前缀；`:36` —— 「工作区就是仓库根时三者恰好相同，所以它会一直不被发现」 | —— | **暂未超过。** 本插件这一层完全没做：会话 `cwd` 在子目录时交出仓库根相对路径，把那些路径喂回去会得到 `ok: true, files: [], message: ""` —— 静默地什么都没有。已建缺陷档 | `node tools/verify-comparison.mjs` → row 5（断言该缺口**仍然复现** —— **这条检查会在它被修好的那天变红**，这正是目的）· `node tools/_probe-pathbase.mjs` |
+| `git-snapshot.ts:168` —— `git status` 按 **2k 字符**截断（而不是按文件条目数），以保持 provider-visible prompt 形状稳定 | 同一个关切：输出要有边界 | **按条目数与行数分别限，并把截断如实交出去而不是静默截断**：`maxDiffLines` / `maxLogEntries` / `clampInteger`，接缝溢出时报 `truncated: true` 并给出溢出路径（实测：21.6 MiB 的补丁到模型手上是 264 KB） | `node tools/verify-comparison.mjs` → row 6 · `node tools/measure.mjs --only spill` · `test/validate.test.js` |
+
+### 怎么自己复核
+
+上面每一行都能归到一条命令上。表里没有任何东西需要「信」：
+
+```bash
+git clone https://github.com/BOWLUNA/dsh-zcode-git && cd dsh-zcode-git
+npm install                       # 链上 harness 的 peer 包；本插件没有运行时依赖
+node tools/verify-comparison.mjs  # 逐行核对上面的表 —— 某行说过头就以非零退出
+node test/run.mjs                 # 95 项检查
+node tools/measure.mjs            # 图里那些数字背后的一次实测，约 18 秒
+```
+
+第 5 行报的是 `GAP REPRODUCES` 而不是 `PASS`：它是缺陷、不是「优于」，而这条检查断言的是
+**这个缺陷仍然存在** —— 这样它被修好之后，README 就没法悄悄继续那么写。
 
 ## 本插件针对 `bash` 做了什么
 

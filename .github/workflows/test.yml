@@ -92,6 +92,14 @@ jobs:
       - name: Documented numbers
         run: node tools/verify-doc-numbers.mjs
 
+      # The README's ZCode comparison table claims each row is checkable. A
+      # citation like `src/validate.js:167` only proves a file and a line exist
+      # — not that the line does what the row says. This asserts the rows
+      # themselves, so the table cannot quietly overstate. It needs no ZCode
+      # checkout: it checks this repository against the claims made about it.
+      - name: Comparison table
+        run: node tools/verify-comparison.mjs
+
       # Git Bash is what Windows contributors use, so the scripts are parsed
       # under it as well as under bash on Linux.
       - name: Installer scripts parse
@@ -166,7 +174,7 @@ jobs:
 
       - name: '6) Boot check — the plugin must really install and start'
         if: matrix.node-version != '20'
-        run: node tools/boot-check.mjs --port 31870
+        run: node tools/boot-check.mjs --port 32070
 
       # A skipped guard and no guard are the same thing, so the skip is
       # announced rather than silent.
