@@ -29,10 +29,15 @@ import { fileURLToPath } from "node:url";
 const REPO = dirname(dirname(fileURLToPath(import.meta.url)));
 
 /**
- * Harness versions this project has been exercised against by hand — a real
- * boot plus a real turn, not just the suite. Update it when you test a new one.
+ * Harness versions this project has been booted against by hand — a real boot
+ * plus a real turn, not just the suite. Update it when you test a new one.
+ *
+ * `0.1.5-rc.3` is deliberately absent: the declared range covers it (it is the
+ * same `0.1.5` tuple as the `rc.2` this project did boot), but coverage by a
+ * range is not the same claim as having run it, and this list is only for the
+ * latter. Listing it would make the file say something it cannot support.
  */
-const TESTED = ["0.1.5-rc.2", "0.1.6-alpha.2"];
+const TESTED = ["0.1.5-rc.2", "0.1.6-alpha.2", "0.1.7-alpha.2"];
 
 /**
  * Parse `x.y.z` or `x.y.z-pre`.
@@ -136,11 +141,56 @@ const EVALUATOR_CASES = [
 	["0.1.4", ">=0.1.5-rc.2 <0.1.6-0 || >=0.1.6-alpha.1 <0.2.0-0", false, "below the floor"],
 	["0.1.7", ">=0.1.5-rc.2 <0.1.6-0 || >=0.1.6-alpha.1 <0.2.0-0", true, "a stable release inside"],
 	["0.1.5", ">=0.1.5-rc.2 <0.1.6-0", true, "the stable release of the lower tuple"],
+	// The version that made this gate worth having. `0.1.7-alpha.2` is a real
+	// prerelease on a tuple no comparator mentions, so npm excludes it — and an
+	// evaluator without the gate reports the opposite. This case is the
+	// regression test for exactly that disagreement.
+	["0.1.7-alpha.2", ">=0.1.5-rc.2 <0.1.6-0 || >=0.1.6-alpha.1 <0.2.0-0", false, "a real prerelease npm excludes"],
+	["0.1.7-alpha.2", ">=0.1.5-rc.2 <0.1.6-0 || >=0.1.6-alpha.1 <0.2.0-0 || >=0.1.7-alpha.1 <0.2.0-0", true, "and the range that would cover it"],
+	["0.1.7-alpha.1", ">=0.1.6-alpha.1 <0.2.0-0", false, "the preset-registry boundary version, still excluded"],
 ];
 for (const [version, range, expected, why] of EVALUATOR_CASES) {
 	if (satisfies(version, range) !== expected) {
 		console.error(`✗ range evaluator self-check failed (${why}):`);
 		console.error(`    satisfies("${version}", "${range}") should be ${String(expected)}`);
+		process.exit(2);
+	}
+}
+
+// The gate above is the only thing standing between "agrees with npm" and
+// "silently more permissive than npm", so it is mutation-tested rather than
+// assumed. Dropping the prerelease rule must flip `0.1.7-alpha.2` from excluded
+// to included; if it does not, these cases are decoration and the guard is
+// protecting nothing.
+{
+	const RANGE = ">=0.1.5-rc.2 <0.1.6-0 || >=0.1.6-alpha.1 <0.2.0-0";
+	const withoutGate = (version) => {
+		const parsed = parseVersion(version);
+		if (parsed === null) return false;
+		// The same branch evaluation with the prerelease rule removed.
+		return RANGE.split("||").some((branch) =>
+			branch.trim().split(/\s+/).filter(Boolean).every((clause) => {
+				const match = /^(>=|<=|>|<|=)?(.+)$/.exec(clause);
+				if (match === null) return true;
+				const bound = parseVersion(match[2]);
+				if (bound === null) return false;
+				const order = compare(parsed, bound);
+				const operator = match[1] ?? "=";
+				if (operator === ">=") return order >= 0;
+				if (operator === "<=") return order <= 0;
+				if (operator === ">") return order > 0;
+				if (operator === "<") return order < 0;
+				return order === 0;
+			}),
+		);
+	};
+	const gated = satisfies("0.1.7-alpha.2", RANGE);
+	const ungated = withoutGate("0.1.7-alpha.2");
+	if (ungated !== true || gated !== false) {
+		console.error("✗ the prerelease gate is not doing the work it claims:");
+		console.error(`    with the gate:    satisfies("0.1.7-alpha.2") = ${String(gated)}  (must be false)`);
+		console.error(`    without the gate: ${String(ungated)}  (must be true — otherwise the gate is not what excludes it)`);
+		console.error("    An evaluator without this rule is more permissive than npm, which is the defect this guard exists to catch.");
 		process.exit(2);
 	}
 }

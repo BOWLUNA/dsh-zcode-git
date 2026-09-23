@@ -44,6 +44,13 @@ jobs:
           - os: ubuntu-latest
             node-version: '24'
             dsh: '0.1.5-rc.2'
+          # The line where agent presets moved from directory scanning to a
+          # declarative registry. This plugin registers no presets, so the
+          # change does not touch it — but the range now covers 0.1.7, and a
+          # range is only honest if the version is actually exercised.
+          - os: ubuntu-latest
+            node-version: '24'
+            dsh: '0.1.7-alpha.2'
 
     steps:
       - uses: actions/checkout@v4

@@ -108,12 +108,16 @@ fetch 与 push 还额外牵涉凭据与主机密钥处理，值得单独设计�
 
 ## 兼容性
 
-本插件声明 `engines.dsh: ">=0.1.5-rc.2 <0.1.6-0 || >=0.1.6-alpha.1 <0.2.0-0"`，并在 Linux 与 Windows 上对
-`0.1.5-rc.2`（稳定线）与 `0.1.6-alpha.2`（预览线）都做过测试。这两个 harness 版本之间
+本插件声明 `engines.dsh: ">=0.1.5-rc.2 <0.1.6-0 || >=0.1.6-alpha.1 <0.2.0-0 || >=0.1.7-alpha.1 <0.2.0-0"`，并在 Linux 与 Windows 上对
+`0.1.5-rc.2`（稳定线）与 `0.1.6-alpha.2` / `0.1.7-alpha.2`（预览线）都做过测试。这三条 harness 线之间
 存在对工具插件有实质影响的差异：
 
 - property 内的 `required: true`：`0.1.5-rc.2` 接受，`0.1.6-alpha.2` 拒绝。
 - 顶层的 `required: [...]` 数组：两者都拒绝。
+- `0.1.7` 把 agent preset 从「扫描目录」换成声明式注册表（`dsh-agent-presets` 变成
+  `dsh-agent-preset` 加 `dsh-agent-preset-registry`）。本插件不注册任何 preset、
+  也不碰 preset API，所以这个改动到不了它 —— 已用 grep 与一次 `0.1.7-alpha.2` 上的
+  真启动（stderr 0 字节）双向核实。
 
 因此本插件一个都不声明，而是在 `execute` 里强制同样的约束。完整清单见
 [`AGENTS.md`](../AGENTS.md)。

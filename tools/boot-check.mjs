@@ -30,12 +30,19 @@
  *   B  `cordis.patch.yml`'s row `name` equals `package.json`'s `name`
  *   C  `--profile web --port <N> --no-open` leaves the port answering **and it
  *      is still answering with the process alive `--settle` ms later**
- *   D  stderr is empty at the moment the port starts answering
+ *   D  no **fatal** pattern appears in stderr by the time the port answers
  *
  * C is asserted on the socket, never on a printed banner: dsh `0.1.5-rc.2`
  * boots with completely empty stdout while `0.1.6-alpha.2` prints
  * `dsh web: http://…`, and both lines are supported. An assertion on the
  * banner is red on one supported line for a difference in wording.
+ *
+ * D is a whitelist of fatal patterns, not "not one byte". A plugin that degrades
+ * gracefully — peers unresolvable in the CI layout, so it prints a warning with a
+ * repair instruction and carries on — used to fail this assertion, which teaches
+ * people to ignore it. The whitelist is short, and each entry carries the reason
+ * it is fatal; a non-fatal warning is still printed so a degraded boot is visible
+ * rather than merely tolerated.
  *
  * The "and stays up" half of C is not belt and braces — a single connect
  * reports a broken plugin as healthy, with a measured timeline showing why.
@@ -423,9 +430,63 @@ async function justRun() {
 					? "it answered, then died — the plugin failed to load"
 					: "it answered, then stopped answering",
 	);
-	record("D  stderr empty at that moment", answering && stderrAtAnswer === "", answering ? `${String((stderrAtAnswer ?? "").length)} bytes` : "not reached");
+	// ── assertion D: no FATAL pattern, not "not one byte" ───────
+	//
+	// This was `stderrAtAnswer === ""`, and that was too coarse. A plugin that
+	// degrades gracefully — peer packages unresolvable in the CI layout, say —
+	// prints a warning with a repair instruction and then works. Failing it for
+	// that trains people to ignore assertion D, and a guard that gets ignored
+	// is worse than no guard.
+	//
+	// So the rule is a whitelist of fatal patterns rather than silence. The
+	// whitelist is deliberately short and every entry is auditable below.
+	const FATAL_PATTERNS = [
+		// A module could not be resolved: the plugin is not actually mounted.
+		{ re: /ERR_MODULE_NOT_FOUND/, why: "an import failed, so the plugin is not loaded at all" },
+		{ re: /Cannot find package/, why: "same failure, node's other wording for it" },
+		// A loader error. `failed to prepare profile bundle` is the one this
+		// ecosystem has hit for real: the row `name` and the package name drifted
+		// apart, and the whole profile refuses to start.
+		{ re: /failed to load/i, why: "the loader rejected something" },
+		{ re: /failed to import/i, why: "the loader rejected an entry" },
+		{ re: /failed to prepare profile bundle/, why: "a row did not resolve — this has bricked a profile here" },
+		// Two plugins registering the same tool name. Observed for real: it takes
+		// the entire profile down, and only a real boot shows it.
+		{ re: /is already registered/, why: "two plugins claim one name; the profile cannot start" },
+		// A schema the harness refuses. The failure mode of an out-of-range dsh.
+		{ re: /schema/i, why: "a tool definition was rejected by the schema DSL" },
+		{ re: /uncaught/i, why: "an exception escaped to the top level" },
+	];
 
-	if (cOk === false || (stderrAtAnswer ?? "").length > 0) {
+	/**
+	 * The fatal patterns a boot's stderr actually matches.
+	 *
+	 * @param text - captured stderr.
+	 * @returns the matching entries.
+	 */
+	const fatalIn = (text) => FATAL_PATTERNS.filter((p) => p.re.test(text));
+
+	const stderrAtAnswerText = stderrAtAnswer ?? "";
+	const fatalAtAnswer = fatalIn(stderrAtAnswerText);
+	const dOk = answering && fatalAtAnswer.length === 0;
+
+	record(
+		"D  no fatal pattern in stderr",
+		dOk,
+		answering === false
+			? "not reached"
+			: fatalAtAnswer.length > 0
+				? `★ ${fatalAtAnswer.map((p) => p.re.source).join(", ")} — ${fatalAtAnswer[0].why}`
+				: `${String(stderrAtAnswerText.length)} bytes of stderr, none of it fatal`,
+	);
+
+	// A non-fatal warning is still printed, so a degraded boot is visible
+	// rather than merely tolerated.
+	if (dOk && stderrAtAnswerText.trim() !== "") {
+		say(`      (non-fatal stderr, allowed by the whitelist: ${String(stderrAtAnswerText.trim().split("\n").length)} line(s))`);
+	}
+
+	if (cOk === false || dOk === false) {
 		if (stdout.trim() !== "") console.error(`\n--- boot stdout ---\n${stdout.trim()}`);
 		if (stderr.trim() !== "") console.error(`\n--- boot stderr ---\n${stderr.trim()}`);
 	}

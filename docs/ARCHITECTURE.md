@@ -130,13 +130,19 @@ of them.
 
 ## Compatibility
 
-The plugin declares `engines.dsh: ">=0.1.5-rc.2 <0.1.6-0 || >=0.1.6-alpha.1 <0.2.0-0"` and is tested
-against `0.1.5-rc.2` (stable) and `0.1.6-alpha.2` (preview) on Linux and
-Windows. The two harness versions differ in ways that matter to a tool plugin:
+The plugin declares `engines.dsh: ">=0.1.5-rc.2 <0.1.6-0 || >=0.1.6-alpha.1 <0.2.0-0 || >=0.1.7-alpha.1 <0.2.0-0"` and is tested
+against `0.1.5-rc.2` (stable) and `0.1.6-alpha.2` / `0.1.7-alpha.2` (preview) on
+Linux and Windows. The three harness lines differ in ways that matter to a tool
+plugin:
 
 - `required: true` inside a property is accepted by `0.1.5-rc.2` and rejected
   by `0.1.6-alpha.2`.
 - A top-level `required: [...]` array is rejected by both.
+- `0.1.7` moves agent presets from directory scanning to a declarative registry
+  (`dsh-agent-presets` becomes `dsh-agent-preset` plus
+  `dsh-agent-preset-registry`). This plugin registers no presets and touches no
+  preset API, so the change does not reach it — verified by grep and by a real
+  boot on `0.1.7-alpha.2` with empty stderr.
 
 This plugin therefore declares neither, and enforces the same constraints in
 `execute`. See [`AGENTS.md`](../AGENTS.md) for the full list of what must not

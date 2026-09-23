@@ -63,7 +63,7 @@ README cannot quietly keep claiming it after a fix.
 
 ## Requirements
 
-- DeepSeek Harness `>=0.1.5-rc.2 <0.1.6-0 || >=0.1.6-alpha.1 <0.2.0-0` — the same range is declared in `engines.dsh`
+- DeepSeek Harness `>=0.1.5-rc.2 <0.1.6-0 || >=0.1.6-alpha.1 <0.2.0-0 || >=0.1.7-alpha.1 <0.2.0-0` — the same range is declared in `engines.dsh`
 - Node `>=20`, which the harness's own bundled runtime satisfies
 - A `git` binary on `PATH`
 

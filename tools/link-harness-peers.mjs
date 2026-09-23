@@ -70,7 +70,22 @@ function findScope(name) {
 	const nested = join(REPO, "node_modules", "@deepseek-ai", "dsh", "node_modules", "@deepseek-ai", name);
 	if (existsSync(nested)) return dirname(nested);
 
-	// 2. A harness install on this machine (the local-development layout).
+	// 2. This repository's own install, at the level npm hoists to. This is the
+	//    layout a checkout gets from a plain `npm install` once the harness is a
+	//    devDependency, and it is where a peer of a `link:`-mounted plugin is
+	//    resolved from in the first place.
+	//
+	//    It is listed before any external harness on purpose. When a plugin is
+	//    installed with `link:`, node resolves bare imports from the *plugin's
+	//    real path*, so these links are what actually decide whether
+	//    `@deepseek-ai/cosmokit` resolves. Preferring a shared, mutable harness
+	//    over the repository's own tree means a change made elsewhere — to a
+	//    directory this repository does not own — silently breaks the boot here.
+	const own = join(REPO, "node_modules", "@deepseek-ai", name);
+	if (existsSync(own)) return dirname(own);
+
+	// 3. An external harness (the local-development layout), via `DSH_INSTALL`
+	//    or the conventional locations.
 	for (const root of harnessRoots()) {
 		if (!existsSync(root)) continue;
 		const candidates = [join(root, "node_modules", "@deepseek-ai", name)];
