@@ -154,9 +154,19 @@ test named in parentheses is what keeps it from coming back.
 
 | Axis | Values that must work | Why |
 | --- | --- | --- |
-| Harness | `0.1.5-rc.2` (stable), `0.1.6-alpha.2` (preview) | the schema DSL changed between them |
+| Harness | `0.1.5-rc.2` / `0.1.5-rc.3` (the `0.1.5` line; `rc.3` is npm's `latest`), `0.1.6-alpha.2`, `0.1.7-alpha.2` | the schema DSL changed between the lines |
 | OS | Windows, Linux | path separators, `%` expansion, line endings |
 | Node | 20, 24 | `AbortSignal.any` has a fallback for older runtimes |
+
+A version belongs in this table only after it was really booted; the same list is
+spelled out in `tools/verify-version-consistency.mjs` as `TESTED`, and that guard
+fails if any entry falls outside `engines.dsh`.
+
+The matrix has two spellings and the guard reads both: a base list
+(`dsh: ['a', 'b']`) and one-version legs under `include:` (`dsh: 'c'`). It strips
+full-line comments first, because prose can carry the same literal as a
+declaration. Keep it that way — reading only one spelling lets an unsupported
+version sit in the matrix, and reading comments makes the guard fail on prose.
 
 Windows is the platform most likely to differ and the one easiest to forget:
 the shell-quoting argument does not apply here, but path joining, reserved

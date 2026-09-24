@@ -131,9 +131,10 @@ of them.
 ## Compatibility
 
 The plugin declares `engines.dsh: ">=0.1.5-rc.2 <0.1.6-0 || >=0.1.6-alpha.1 <0.2.0-0 || >=0.1.7-alpha.1 <0.2.0-0"` and is tested
-against `0.1.5-rc.2` (stable) and `0.1.6-alpha.2` / `0.1.7-alpha.2` (preview) on
-Linux and Windows. The three harness lines differ in ways that matter to a tool
-plugin:
+against `0.1.5-rc.2` and `0.1.5-rc.3` (the `0.1.5` line — the latter is npm's
+`latest`, the version a user reaches without pinning one), plus `0.1.6-alpha.2` /
+`0.1.7-alpha.2` (preview), on Linux and Windows. The three harness lines differ
+in ways that matter to a tool plugin:
 
 - `required: true` inside a property is accepted by `0.1.5-rc.2` and rejected
   by `0.1.6-alpha.2`.

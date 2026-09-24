@@ -32,12 +32,15 @@ const REPO = dirname(dirname(fileURLToPath(import.meta.url)));
  * Harness versions this project has been booted against by hand — a real boot
  * plus a real turn, not just the suite. Update it when you test a new one.
  *
- * `0.1.5-rc.3` is deliberately absent: the declared range covers it (it is the
- * same `0.1.5` tuple as the `rc.2` this project did boot), but coverage by a
- * range is not the same claim as having run it, and this list is only for the
- * latter. Listing it would make the file say something it cannot support.
+ * `0.1.5-rc.3` was deliberately absent until 2026-09-24: the declared range
+ * covered it — it is the same `0.1.5` tuple as the `rc.2` this project did boot —
+ * but coverage by a range is not the same claim as having run it. It is listed
+ * now because it was actually run. It is also npm's `latest`, so it is the
+ * version a user reaches without pinning anything, and a range that claims to
+ * cover an unexercised `latest` is exactly the claim this list exists to keep
+ * honest.
  */
-const TESTED = ["0.1.5-rc.2", "0.1.6-alpha.2", "0.1.7-alpha.2"];
+const TESTED = ["0.1.5-rc.2", "0.1.5-rc.3", "0.1.6-alpha.2", "0.1.7-alpha.2"];
 
 /**
  * Parse `x.y.z` or `x.y.z-pre`.
@@ -214,8 +217,24 @@ const ciPath = join(REPO, ".github", "workflows", "test.yml");
 if (!existsSync(ciPath)) {
 	failures.push(".github/workflows/test.yml is missing — the matrix that justifies the range cannot be read");
 } else {
-	const ci = readFileSync(ciPath, "utf8");
-	const matrixVersions = new Set([...ci.matchAll(/dsh:\s*'([^']+)'/g)].map((match) => match[1]));
+	const ci = readFileSync(ciPath, "utf8").replace(/^[ \t]*#.*$/gmu, "");
+	const matrixVersions = new Set();
+	// `include:` legs spell one version each: `dsh: '0.1.5-rc.3'`.
+	for (const match of ci.matchAll(/dsh:\s*'([^']+)'/g)) matrixVersions.add(match[1]);
+	// The base list spells several: `dsh: ['0.1.6-alpha.2']`. Reading only the
+	// first form left a silent hole — a version placed in the base list was
+	// invisible to the one check meant to catch a matrix entry the range does not
+	// cover. Measured here 2026-09-24: with `dsh: ['0.1.5-rc.1']` as the base list
+	// this guard printed ✓ and exited 0, although CI would then have run an
+	// unsupported version on two legs.
+	//
+	// Full-line comments are stripped above for the same reason the matrix is read
+	// from text at all: prose can carry the same literal as a declaration
+	// (`# dsh: '0.1.5-rc.1'` made the old pattern fail the build), and the guard
+	// must read declarations. Inline trailing comments are not stripped.
+	for (const list of ci.matchAll(/dsh:\s*\[([^\]]*)\]/g)) {
+		for (const item of list[1].matchAll(/'([^']+)'|"([^"]+)"/g)) matrixVersions.add(item[1] ?? item[2]);
+	}
 	if (matrixVersions.size === 0) failures.push("the CI matrix declares no dsh versions");
 	for (const version of matrixVersions) {
 		if (!satisfies(version, range)) failures.push(`${version} is exercised by CI but the declared range is ${range}`);

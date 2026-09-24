@@ -44,6 +44,14 @@ jobs:
           - os: ubuntu-latest
             node-version: '24'
             dsh: '0.1.5-rc.2'
+          # npm's `latest` — the version a user reaches without pinning one. The
+          # range has covered it from the start, but CI never installed it until
+          # now, and a range that covers a version nobody runs is a claim without
+          # a test. Ran by hand first (boot check, all four assertions), then
+          # pinned here so it stays covered.
+          - os: ubuntu-latest
+            node-version: '24'
+            dsh: '0.1.5-rc.3'
           # The line where agent presets moved from directory scanning to a
           # declarative registry. This plugin registers no presets, so the
           # change does not touch it — but the range now covers 0.1.7, and a
